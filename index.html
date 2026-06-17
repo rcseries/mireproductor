@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reproductor con Subtítulos Traducidos</title>
+    
+    <!-- Estilos de Plyr (CDN) -->
+    <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+    
+    <!-- Tus estilos personalizados -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 Reproductor con Traducción de Subtítulos</h1>
+        
+        <!-- Panel de Control -->
+        <div class="control-panel">
+            <div class="input-group">
+                <label for="videoUrl">URL del Video:</label>
+                <input type="url" id="videoUrl" placeholder="https://ejemplo.com/video.mp4" value="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4">
+            </div>
+            
+            <div class="input-group">
+                <label for="subtitleFile">Subtítulos (SRT o VTT):</label>
+                <input type="file" id="subtitleFile" accept=".srt,.vtt">
+            </div>
+            
+            <div class="button-group">
+                <button id="loadBtn" class="btn btn-primary">Cargar Video y Subtítulos</button>
+                <button id="translateBtn" class="btn btn-success" disabled>Traducir al Español</button>
+            </div>
+            
+            <div id="statusMessage" class="status-message"></div>
+        </div>
+        
+        <!-- Reproductor de Video -->
+        <div class="player-wrapper">
+            <video id="player" controls playsinline>
+                <source id="videoSource" src="" type="video/mp4">
+                <!-- Los subtítulos se agregarán dinámicamente aquí -->
+            </video>
+        </div>
+        
+        <!-- Información de los subtítulos -->
+        <div id="subtitleInfo" class="subtitle-info">
+            <p>ℹ️ Carga un archivo de subtítulos para comenzar</p>
+        </div>
+    </div>
+    
+    <!-- Plyr JS (CDN) -->
+    <script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
+    
+    <!-- Tus archivos JavaScript -->
+    <script src="js/subtitle-loader.js"></script>
+    <script src="js/translator.js"></script>
+    <script src="js/player.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

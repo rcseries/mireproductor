@@ -3,17 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reproductor con Subtítulos Traducidos</title>
+    <title>Reproductor con Subtítulos Automáticos</title>
     
-    <!-- Estilos de Plyr (CDN) -->
+    <!-- Estilos de Plyr -->
     <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
-    
-    <!-- Tus estilos personalizados -->
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
     <div class="container">
-        <h1>🎬 Reproductor con Traducción de Subtítulos</h1>
+        <h1>🎬 Reproductor con Subtítulos Automáticos</h1>
         
         <!-- Panel de Control -->
         <div class="control-panel">
@@ -22,38 +20,88 @@
                 <input type="url" id="videoUrl" placeholder="https://ejemplo.com/video.mp4" value="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4">
             </div>
             
-            <div class="input-group">
-                <label for="subtitleFile">Subtítulos (SRT o VTT):</label>
-                <input type="file" id="subtitleFile" accept=".srt,.vtt">
+            <!-- Sección de Subtítulos -->
+            <div class="subtitle-section">
+                <h3>📝 Fuente de Subtítulos</h3>
+                
+                <div class="radio-group">
+                    <label>
+                        <input type="radio" name="subtitleSource" value="auto" checked>
+                        Detectar automáticamente
+                    </label>
+                    <label>
+                        <input type="radio" name="subtitleSource" value="file">
+                        Cargar archivo local
+                    </label>
+                    <label>
+                        <input type="radio" name="subtitleSource" value="url">
+                        URL de subtítulos
+                    </label>
+                    <label>
+                        <input type="radio" name="subtitleSource" value="generate">
+                        Generar con IA (experimental)
+                    </label>
+                </div>
+                
+                <!-- Opciones según selección -->
+                <div id="fileOptions" class="subtitle-options" style="display:none;">
+                    <label for="subtitleFile">Seleccionar archivo (.srt, .vtt):</label>
+                    <input type="file" id="subtitleFile" accept=".srt,.vtt">
+                </div>
+                
+                <div id="urlOptions" class="subtitle-options" style="display:none;">
+                    <label for="subtitleUrl">URL del archivo de subtítulos:</label>
+                    <input type="url" id="subtitleUrl" placeholder="https://ejemplo.com/subtitles.srt">
+                </div>
+                
+                <div id="generateOptions" class="subtitle-options" style="display:none;">
+                    <p style="color: #4a5568; font-size: 0.9rem;">
+                        ⚠️ Experimental: Usa la API de reconocimiento de voz del navegador.
+                        <br>Funciona mejor con videos en inglés.
+                    </p>
+                    <label>
+                        <input type="checkbox" id="generateOnPlay" checked>
+                        Generar subtítulos al reproducir
+                    </label>
+                    <label>
+                        <input type="checkbox" id="translateGenerated" checked>
+                        Traducir automáticamente al español
+                    </label>
+                </div>
             </div>
             
             <div class="button-group">
-                <button id="loadBtn" class="btn btn-primary">Cargar Video y Subtítulos</button>
+                <button id="loadBtn" class="btn btn-primary">Cargar Video</button>
+                <button id="subtitlesBtn" class="btn btn-info" disabled>Obtener Subtítulos</button>
                 <button id="translateBtn" class="btn btn-success" disabled>Traducir al Español</button>
             </div>
             
             <div id="statusMessage" class="status-message"></div>
+            <div id="progressBar" class="progress-bar" style="display:none;">
+                <div class="progress-fill" style="width:0%"></div>
+            </div>
         </div>
         
         <!-- Reproductor de Video -->
         <div class="player-wrapper">
-            <video id="player" controls playsinline>
+            <video id="player" controls playsinline crossorigin="anonymous">
                 <source id="videoSource" src="" type="video/mp4">
-                <!-- Los subtítulos se agregarán dinámicamente aquí -->
             </video>
         </div>
         
         <!-- Información de los subtítulos -->
         <div id="subtitleInfo" class="subtitle-info">
-            <p>ℹ️ Carga un archivo de subtítulos para comenzar</p>
+            <p>ℹ️ Carga un video para comenzar</p>
         </div>
     </div>
     
-    <!-- Plyr JS (CDN) -->
+    <!-- Plyr JS -->
     <script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
     
     <!-- Tus archivos JavaScript -->
     <script src="js/subtitle-loader.js"></script>
+    <script src="js/subtitle-finder.js"></script>
+    <script src="js/subtitle-generator.js"></script>
     <script src="js/translator.js"></script>
     <script src="js/player.js"></script>
     <script src="js/app.js"></script>

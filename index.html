@@ -3,107 +3,976 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reproductor con Subtítulos Automáticos</title>
-    
-    <!-- Estilos de Plyr -->
-    <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
-    <link rel="stylesheet" href="css/styles.css">
+    <title>KissKH — Subtítulos en Español</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #0d0f14;
+            --surface: #161920;
+            --surface2: #1e2230;
+            --border: #2a2f42;
+            --accent: #e84b6b;
+            --accent2: #ff7a54;
+            --text: #e8eaf0;
+            --muted: #7a8099;
+            --success: #3ecf8e;
+            --warning: #f5a623;
+            --error: #e84b6b;
+            --info: #4a9eff;
+            --radius: 10px;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 24px 16px;
+        }
+
+        .app {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        header h1 span {
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        header p {
+            color: var(--muted);
+            margin-top: 6px;
+            font-size: 0.9rem;
+        }
+
+        /* Card */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+        .card-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--muted);
+            margin-bottom: 12px;
+        }
+
+        /* Input */
+        .input-row {
+            display: flex;
+            gap: 10px;
+        }
+        input[type="text"], input[type="url"] {
+            flex: 1;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 11px 14px;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        input[type="text"]:focus, input[type="url"]:focus {
+            border-color: var(--accent);
+        }
+        input::placeholder { color: var(--muted); }
+
+        /* Buttons */
+        .btn {
+            padding: 11px 20px;
+            border: none;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            color: white;
+        }
+        .btn-primary:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
+        .btn-secondary {
+            background: var(--surface2);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+        .btn-secondary:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+        .btn-full { width: 100%; margin-top: 10px; }
+
+        /* Status */
+        .status {
+            margin-top: 12px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            display: none;
+        }
+        .status.show { display: block; }
+        .status.success { background: rgba(62,207,142,0.12); color: var(--success); border: 1px solid rgba(62,207,142,0.25); }
+        .status.error   { background: rgba(232,75,107,0.12); color: var(--error);   border: 1px solid rgba(232,75,107,0.25); }
+        .status.info    { background: rgba(74,158,255,0.12); color: var(--info);    border: 1px solid rgba(74,158,255,0.25); }
+        .status.warning { background: rgba(245,166,35,0.12); color: var(--warning); border: 1px solid rgba(245,166,35,0.25); }
+
+        /* Progress */
+        .progress-wrap { margin-top: 10px; display: none; }
+        .progress-wrap.show { display: block; }
+        .progress-bar {
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            border-radius: 2px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+        .progress-label {
+            font-size: 0.78rem;
+            color: var(--muted);
+            margin-top: 5px;
+        }
+
+        /* Episode info */
+        .episode-info {
+            background: var(--surface2);
+            border-radius: 8px;
+            padding: 14px;
+            display: none;
+        }
+        .episode-info.show { display: flex; align-items: center; gap: 14px; }
+        .episode-info img {
+            width: 60px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 6px;
+            flex-shrink: 0;
+        }
+        .episode-info .meta h3 { font-size: 0.95rem; font-weight: 600; }
+        .episode-info .meta p { font-size: 0.8rem; color: var(--muted); margin-top: 3px; }
+        .ep-id-badge {
+            background: rgba(232,75,107,0.15);
+            color: var(--accent);
+            border: 1px solid rgba(232,75,107,0.3);
+            border-radius: 5px;
+            padding: 2px 8px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: inline-block;
+            margin-top: 5px;
+        }
+
+        /* Subtitles list */
+        .sub-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 0;
+        }
+        .sub-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            transition: border-color 0.2s;
+        }
+        .sub-item:hover { border-color: var(--accent); }
+        .sub-item .lang {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .lang-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--muted);
+            flex-shrink: 0;
+        }
+        .lang-dot.es { background: var(--success); }
+        .lang-dot.en { background: var(--info); }
+        .lang-name { font-size: 0.875rem; font-weight: 500; }
+        .lang-type { font-size: 0.75rem; color: var(--muted); margin-top: 1px; }
+        .sub-item .actions { display: flex; gap: 6px; }
+        .btn-sm {
+            padding: 5px 12px;
+            font-size: 0.78rem;
+            border-radius: 6px;
+        }
+
+        /* Player */
+        .player-wrapper {
+            position: relative;
+            background: #000;
+            border-radius: var(--radius);
+            overflow: hidden;
+            aspect-ratio: 16/9;
+            display: none;
+        }
+        .player-wrapper.show { display: block; }
+        .player-wrapper iframe {
+            width: 100%; height: 100%;
+            border: none;
+            display: block;
+        }
+
+        /* Subtitle viewer */
+        .sub-viewer {
+            display: none;
+        }
+        .sub-viewer.show { display: block; }
+        .sub-search {
+            margin-bottom: 12px;
+        }
+        .sub-entries {
+            max-height: 320px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding-right: 4px;
+        }
+        .sub-entries::-webkit-scrollbar { width: 4px; }
+        .sub-entries::-webkit-scrollbar-track { background: var(--surface2); }
+        .sub-entries::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+        .sub-entry {
+            display: flex;
+            gap: 12px;
+            background: var(--surface2);
+            border-radius: 6px;
+            padding: 8px 12px;
+        }
+        .sub-time {
+            font-size: 0.72rem;
+            color: var(--accent);
+            font-weight: 600;
+            white-space: nowrap;
+            padding-top: 2px;
+            min-width: 75px;
+        }
+        .sub-text { font-size: 0.85rem; line-height: 1.5; }
+        .sub-original { font-size: 0.75rem; color: var(--muted); margin-top: 3px; }
+
+        /* Download area */
+        .dl-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        /* API key input */
+        .api-key-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .api-key-row input { flex: 1; font-size: 0.85rem; }
+        .key-hint { font-size: 0.78rem; color: var(--muted); margin-top: 6px; }
+        .key-hint a { color: var(--info); text-decoration: none; }
+        .key-hint a:hover { text-decoration: underline; }
+
+        /* Tabs */
+        .tabs { display: flex; gap: 2px; margin-bottom: 14px; }
+        .tab {
+            padding: 7px 16px;
+            border-radius: 7px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            color: var(--muted);
+            background: transparent;
+            border: none;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+        .tab.active { background: var(--surface2); color: var(--text); }
+        .tab:hover:not(.active) { color: var(--text); }
+
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        /* Divider */
+        .divider { height: 1px; background: var(--border); margin: 16px 0; }
+
+        /* Help text */
+        .help-block {
+            background: rgba(74,158,255,0.08);
+            border: 1px solid rgba(74,158,255,0.2);
+            border-radius: 8px;
+            padding: 12px 14px;
+            font-size: 0.82rem;
+            color: var(--info);
+            line-height: 1.6;
+        }
+        .help-block code {
+            background: rgba(74,158,255,0.15);
+            padding: 1px 5px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+
+        @media (max-width: 600px) {
+            .input-row { flex-direction: column; }
+            .dl-row { flex-direction: column; }
+            header h1 { font-size: 1.4rem; }
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🎬 Reproductor con Subtítulos Automáticos</h1>
-        
-        <!-- Panel de Control -->
-        <div class="control-panel">
-            <div class="input-group">
-                <label for="videoUrl">URL del Video:</label>
-                <input type="url" id="videoUrl" placeholder="https://ejemplo.com/video.mp4" value="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4">
-            </div>
-            
-            <!-- Sección de Subtítulos -->
-            <div class="subtitle-section">
-                <h3>📝 Fuente de Subtítulos</h3>
-                
-                <div class="radio-group">
-                    <label>
-                        <input type="radio" name="subtitleSource" value="auto" checked>
-                        Detectar automáticamente
-                    </label>
-                    <label>
-                        <input type="radio" name="subtitleSource" value="file">
-                        Cargar archivo local
-                    </label>
-                    <label>
-                        <input type="radio" name="subtitleSource" value="url">
-                        URL de subtítulos
-                    </label>
-                    <label>
-                        <input type="radio" name="subtitleSource" value="generate">
-                        Generar con IA (experimental)
-                    </label>
-                </div>
-                
-                <!-- Opciones según selección -->
-                <div id="fileOptions" class="subtitle-options" style="display:none;">
-                    <label for="subtitleFile">Seleccionar archivo (.srt, .vtt):</label>
-                    <input type="file" id="subtitleFile" accept=".srt,.vtt">
-                </div>
-                
-                <div id="urlOptions" class="subtitle-options" style="display:none;">
-                    <label for="subtitleUrl">URL del archivo de subtítulos:</label>
-                    <input type="url" id="subtitleUrl" placeholder="https://ejemplo.com/subtitles.srt">
-                </div>
-                
-                <div id="generateOptions" class="subtitle-options" style="display:none;">
-                    <p style="color: #4a5568; font-size: 0.9rem;">
-                        ⚠️ Experimental: Usa la API de reconocimiento de voz del navegador.
-                        <br>Funciona mejor con videos en inglés.
-                    </p>
-                    <label>
-                        <input type="checkbox" id="generateOnPlay" checked>
-                        Generar subtítulos al reproducir
-                    </label>
-                    <label>
-                        <input type="checkbox" id="translateGenerated" checked>
-                        Traducir automáticamente al español
-                    </label>
-                </div>
-            </div>
-            
-            <div class="button-group">
-                <button id="loadBtn" class="btn btn-primary">Cargar Video</button>
-                <button id="subtitlesBtn" class="btn btn-info" disabled>Obtener Subtítulos</button>
-                <button id="translateBtn" class="btn btn-success" disabled>Traducir al Español</button>
-            </div>
-            
-            <div id="statusMessage" class="status-message"></div>
-            <div id="progressBar" class="progress-bar" style="display:none;">
-                <div class="progress-fill" style="width:0%"></div>
-            </div>
+<div class="app">
+    <header>
+        <h1>🎬 KissKH <span>Subtítulos ES</span></h1>
+        <p>Carga cualquier episodio de KissKH con subtítulos en español</p>
+    </header>
+
+    <!-- Step 1: URL -->
+    <div class="card">
+        <div class="card-title">1 · URL del episodio</div>
+        <div class="input-row">
+            <input type="url" id="urlInput"
+                placeholder="https://kisskh.co/Drama/...?id=XXXX&ep=YYYYY&...">
+            <button class="btn btn-primary" id="loadBtn" onclick="loadEpisode()">Cargar</button>
         </div>
-        
-        <!-- Reproductor de Video -->
-        <div class="player-wrapper">
-            <video id="player" controls playsinline crossorigin="anonymous">
-                <source id="videoSource" src="" type="video/mp4">
-            </video>
+        <div class="help-block" style="margin-top:12px;">
+            Pega la URL completa del episodio. Necesitas el parámetro <code>ep=</code>.<br>
+            Ejemplo: <code>https://kisskh.co/Drama/Show-Name/Episode-1?id=1234&<strong>ep=214818</strong>&page=0&pageSize=100</code>
         </div>
-        
-        <!-- Información de los subtítulos -->
-        <div id="subtitleInfo" class="subtitle-info">
-            <p>ℹ️ Carga un video para comenzar</p>
+        <div id="loadStatus" class="status"></div>
+
+        <!-- Episode info -->
+        <div id="episodeInfo" class="episode-info" style="margin-top:12px;"></div>
+    </div>
+
+    <!-- Step 2: Subtitles -->
+    <div class="card" id="subsCard" style="display:none;">
+        <div class="card-title">2 · Subtítulos disponibles</div>
+        <div id="subList" class="sub-list"></div>
+        <div id="subStatus" class="status"></div>
+        <div id="subProgress" class="progress-wrap">
+            <div class="progress-bar"><div class="progress-fill" id="subProgressFill"></div></div>
+            <div class="progress-label" id="subProgressLabel"></div>
         </div>
     </div>
+
+    <!-- Step 3: Claude API Key (for translation) -->
+    <div class="card" id="apiCard" style="display:none;">
+        <div class="card-title">3 · Traducción con Claude AI</div>
+        <div class="api-key-row">
+            <input type="text" id="apiKey" placeholder="sk-ant-api03-..." autocomplete="off">
+            <button class="btn btn-secondary" onclick="saveKey()">Guardar</button>
+        </div>
+        <div class="key-hint">
+            Necesitas una API key de Anthropic para traducir al español.<br>
+            Obtén la tuya gratis en <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>
+        </div>
+    </div>
+
+    <!-- Subtitle viewer + Player -->
+    <div class="card sub-viewer" id="subViewer">
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('subtitles')">Subtítulos</button>
+            <button class="tab" onclick="switchTab('player')">▶ Reproductor embed</button>
+        </div>
+
+        <!-- Subtitles tab -->
+        <div class="tab-panel active" id="tab-subtitles">
+            <input type="text" class="sub-search" id="subSearch"
+                placeholder="Buscar en subtítulos..." oninput="filterSubs()" style="width:100%;margin-bottom:12px;">
+            <div id="subEntries" class="sub-entries"></div>
+            <div class="divider"></div>
+            <div class="dl-row">
+                <button class="btn btn-secondary" onclick="downloadSubs('srt')">⬇ Descargar .SRT</button>
+                <button class="btn btn-secondary" onclick="downloadSubs('vtt')">⬇ Descargar .VTT</button>
+            </div>
+        </div>
+
+        <!-- Player tab -->
+        <div class="tab-panel" id="tab-player">
+            <div class="player-wrapper show" id="playerWrapper">
+                <div id="playerContent" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:0.9rem;">
+                    Carga un episodio para ver el reproductor embed
+                </div>
+            </div>
+            <p style="color:var(--muted);font-size:0.78rem;margin-top:10px;">
+                ℹ️ El reproductor embed de KissKH incluye sus subtítulos nativos. Los subtítulos en español que generaste arriba son independientes y puedes descargarlos para usarlos en cualquier reproductor.
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+// ─── Estado global ───────────────────────────────────────────────
+let state = {
+    episodeId: null,
+    availableSubs: [],    // [{lang, label, url}]
+    currentSubs: [],      // [{index, start, end, text, original?}]
+    filteredSubs: [],
+    apiKey: localStorage.getItem('claude_api_key') || ''
+};
+
+if (state.apiKey) {
+    document.getElementById('apiKey').value = state.apiKey;
+}
+
+// ─── UI helpers ──────────────────────────────────────────────────
+function showStatus(id, msg, type) {
+    const el = document.getElementById(id);
+    el.textContent = msg;
+    el.className = `status show ${type}`;
+}
+function hideStatus(id) {
+    document.getElementById(id).className = 'status';
+}
+function showProgress(pct, label) {
+    const wrap = document.getElementById('subProgress');
+    const fill = document.getElementById('subProgressFill');
+    const lbl  = document.getElementById('subProgressLabel');
+    wrap.classList.add('show');
+    fill.style.width = pct + '%';
+    lbl.textContent = label || '';
+}
+function hideProgress() {
+    document.getElementById('subProgress').classList.remove('show');
+}
+function switchTab(name) {
+    document.querySelectorAll('.tab').forEach((t,i) => {
+        t.classList.toggle('active', ['subtitles','player'][i] === name);
+    });
+    document.querySelectorAll('.tab-panel').forEach((p,i) => {
+        p.classList.toggle('active', ['subtitles','player'][i] === name);
+    });
+}
+function saveKey() {
+    const k = document.getElementById('apiKey').value.trim();
+    if (k) { state.apiKey = k; localStorage.setItem('claude_api_key', k); }
+    showStatus('subStatus', '✅ API key guardada', 'success');
+    setTimeout(() => hideStatus('subStatus'), 2000);
+}
+
+// ─── Extraer episode ID de la URL ────────────────────────────────
+function extractEpisodeId(url) {
+    try {
+        const u = new URL(url);
+        const ep = u.searchParams.get('ep');
+        if (ep && /^\d+$/.test(ep)) return ep;
+    } catch {}
+    // fallback: buscar ep= en el string
+    const m = url.match(/[?&]ep=(\d+)/);
+    return m ? m[1] : null;
+}
+
+// ─── Cargar episodio ─────────────────────────────────────────────
+async function loadEpisode() {
+    const url = document.getElementById('urlInput').value.trim();
+    if (!url) { showStatus('loadStatus', '⚠️ Pega una URL de KissKH', 'warning'); return; }
+
+    const epId = extractEpisodeId(url);
+    if (!epId) {
+        showStatus('loadStatus', '❌ No se encontró el parámetro ep= en la URL. Asegúrate de copiar la URL completa del episodio desde kisskh.co', 'error');
+        return;
+    }
+
+    state.episodeId = epId;
+    document.getElementById('loadBtn').disabled = true;
+    showStatus('loadStatus', `🔍 Cargando episodio ID ${epId}...`, 'info');
+
+    // Mostrar embed inmediatamente
+    const playerContent = document.getElementById('playerContent');
+    playerContent.innerHTML = `<iframe src="https://kisskh.megaplay.su/kisskh/${epId}?color=%23e84b6b" allowfullscreen></iframe>`;
+    document.getElementById('playerContent').style.width = '100%';
+    document.getElementById('playerContent').style.height = '100%';
+    document.getElementById('playerContent').style.display = 'block';
+
+    // Mostrar el viewer
+    document.getElementById('subViewer').classList.add('show');
+
+    // Mostrar info básica del episodio
+    showEpisodeInfo(epId);
+
+    // Cargar subtítulos disponibles
+    await loadAvailableSubtitles(epId);
+
+    document.getElementById('loadBtn').disabled = false;
+}
+
+function showEpisodeInfo(epId) {
+    const info = document.getElementById('episodeInfo');
+    info.classList.add('show');
+    info.innerHTML = `
+        <div class="meta">
+            <h3>Episodio cargado</h3>
+            <p>Obteniendo subtítulos disponibles...</p>
+            <span class="ep-id-badge">EP ID: ${epId}</span>
+        </div>
+    `;
+}
+
+// ─── Obtener subtítulos de la API de KissKH ──────────────────────
+async function loadAvailableSubtitles(epId) {
+    document.getElementById('subsCard').style.display = 'block';
+    document.getElementById('apiCard').style.display = 'block';
+    showStatus('subStatus', '🔍 Buscando subtítulos disponibles...', 'info');
+
+    try {
+        // API pública de kisskh para metadatos del episodio
+        const apiUrl = `https://kisskh.co/api/DramaList/Episode/${epId}.png?err=undefined&-1`;
+        
+        let subs = [];
+        try {
+            const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(apiUrl)}`, {
+                headers: { 'Referer': 'https://kisskh.co/' }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                // La API devuelve un array de objetos de subtítulos
+                if (data && data.subtitles) {
+                    subs = data.subtitles;
+                } else if (Array.isArray(data)) {
+                    subs = data;
+                }
+            }
+        } catch(e) {
+            console.warn('API directa falló, usando alternativa:', e);
+        }
+
+        // Si la API directa no dio resultados, intentar con la API alternativa
+        if (subs.length === 0) {
+            try {
+                const altUrl = `https://nyawit-kisskh-api-nodejs.vercel.app/api/Sub/${epId}`;
+                const res2 = await fetch(altUrl);
+                if (res2.ok) {
+                    const data2 = await res2.json();
+                    if (Array.isArray(data2)) subs = data2;
+                    else if (data2.subtitles) subs = data2.subtitles;
+                }
+            } catch(e2) {
+                console.warn('API alternativa también falló:', e2);
+            }
+        }
+
+        if (subs.length > 0) {
+            state.availableSubs = subs;
+            renderSubtitleList(subs);
+            showStatus('loadStatus', `✅ Episodio ${epId} cargado. Se encontraron ${subs.length} pistas de subtítulos.`, 'success');
+            document.getElementById('episodeInfo').querySelector('p').textContent = `${subs.length} idiomas de subtítulos disponibles`;
+        } else {
+            // Si no hay subtítulos en la API, ofrecer solo traducción
+            renderSubtitleListFallback(epId);
+            showStatus('loadStatus', `✅ Episodio ${epId} cargado. No se encontraron subtítulos en la API — puedes generarlos en español con Claude.`, 'warning');
+            document.getElementById('episodeInfo').querySelector('p').textContent = 'Subtítulos no disponibles en la API';
+        }
+
+    } catch (err) {
+        console.error(err);
+        renderSubtitleListFallback(epId);
+        showStatus('loadStatus', '⚠️ No se pudieron obtener subtítulos de la API de KissKH. Puedes generar subtítulos en español con Claude.', 'warning');
+    }
+}
+
+// ─── Renderizar lista de subtítulos ──────────────────────────────
+const LANG_NAMES = {
+    'en': 'Inglés', 'es': 'Español', 'zh': 'Chino', 'ko': 'Coreano',
+    'ja': 'Japonés', 'th': 'Tailandés', 'id': 'Indonesio', 'vi': 'Vietnamita',
+    'pt': 'Portugués', 'fr': 'Francés', 'ar': 'Árabe', 'de': 'Alemán',
+    'ru': 'Ruso', 'tr': 'Turco', 'ms': 'Malayo'
+};
+
+function getLangName(code) {
+    if (!code) return 'Desconocido';
+    const c = code.toLowerCase().substring(0,2);
+    return LANG_NAMES[c] || code;
+}
+
+function renderSubtitleList(subs) {
+    const list = document.getElementById('subList');
     
-    <!-- Plyr JS -->
-    <script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
-    
-    <!-- Tus archivos JavaScript -->
-    <script src="js/subtitle-loader.js"></script>
-    <script src="js/subtitle-finder.js"></script>
-    <script src="js/subtitle-generator.js"></script>
-    <script src="js/translator.js"></script>
-    <script src="js/player.js"></script>
-    <script src="js/app.js"></script>
+    // Ordenar: español primero, luego inglés, luego el resto
+    const sorted = [...subs].sort((a, b) => {
+        const la = (a.lang || a.language || '').toLowerCase();
+        const lb = (b.lang || b.language || '').toLowerCase();
+        if (la.startsWith('es')) return -1;
+        if (lb.startsWith('es')) return 1;
+        if (la.startsWith('en')) return -1;
+        if (lb.startsWith('en')) return 1;
+        return 0;
+    });
+
+    const hasSpanish = sorted.some(s => (s.lang || s.language || '').toLowerCase().startsWith('es'));
+
+    list.innerHTML = '';
+
+    if (!hasSpanish) {
+        // Mostrar opción de traducir
+        const transItem = document.createElement('div');
+        transItem.style.cssText = 'background:rgba(232,75,107,0.08);border:1px solid rgba(232,75,107,0.25);border-radius:8px;padding:12px 14px;margin-bottom:8px;';
+        transItem.innerHTML = `
+            <div style="font-size:0.85rem;font-weight:600;color:var(--accent);margin-bottom:6px;">🤖 No hay subtítulos en español disponibles</div>
+            <div style="font-size:0.82rem;color:var(--muted);margin-bottom:10px;">Traduce los subtítulos en inglés al español usando Claude AI.</div>
+            <button class="btn btn-primary btn-sm" onclick="translateEnToEs()">Traducir Inglés → Español con Claude</button>
+        `;
+        list.appendChild(transItem);
+    }
+
+    sorted.forEach(sub => {
+        const lang = sub.lang || sub.language || '?';
+        const label = sub.label || getLangName(lang);
+        const url = sub.src || sub.url || sub.file || '';
+        const isEs = lang.toLowerCase().startsWith('es');
+        const isEn = lang.toLowerCase().startsWith('en');
+
+        const item = document.createElement('div');
+        item.className = 'sub-item';
+        item.innerHTML = `
+            <div class="lang">
+                <div class="lang-dot ${isEs ? 'es' : isEn ? 'en' : ''}"></div>
+                <div>
+                    <div class="lang-name">${label} ${isEs ? '🇪🇸' : isEn ? '🇺🇸' : ''}</div>
+                    <div class="lang-type">${lang.toUpperCase()}</div>
+                </div>
+            </div>
+            <div class="actions">
+                ${url ? `<button class="btn btn-secondary btn-sm" onclick="loadAndViewSubs('${url}','${lang}','${label}')">Ver</button>` : ''}
+                ${(isEn && !hasSpanish && url) ? `<button class="btn btn-primary btn-sm" onclick="loadAndTranslate('${url}')">→ ES</button>` : ''}
+            </div>
+        `;
+        list.appendChild(item);
+    });
+}
+
+function renderSubtitleListFallback(epId) {
+    const list = document.getElementById('subList');
+    list.innerHTML = `
+        <div style="background:rgba(245,166,35,0.08);border:1px solid rgba(245,166,35,0.25);border-radius:8px;padding:14px;">
+            <div style="font-size:0.85rem;font-weight:600;color:var(--warning);margin-bottom:6px;">⚠️ Subtítulos no encontrados en la API</div>
+            <div style="font-size:0.82rem;color:var(--muted);margin-bottom:10px;">
+                Esto puede ocurrir si el episodio es muy nuevo o usa una API diferente.<br>
+                Prueba con la URL de subtítulos directa si la tienes.
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <input type="url" id="manualSubUrl" placeholder="URL del .srt o .vtt de subtítulos" 
+                    style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text);font-family:inherit;font-size:0.82rem;outline:none;min-width:200px;">
+                <button class="btn btn-secondary btn-sm" onclick="loadManualSubs()">Cargar</button>
+            </div>
+        </div>
+    `;
+}
+
+// ─── Cargar y ver subtítulos ──────────────────────────────────────
+async function loadAndViewSubs(url, lang, label) {
+    showStatus('subStatus', `⏳ Cargando subtítulos (${label})...`, 'info');
+    try {
+        const content = await fetchSubtitleContent(url);
+        const subs = parseSubtitles(content, url);
+        state.currentSubs = subs;
+        state.filteredSubs = subs;
+        renderSubEntries(subs, false);
+        showStatus('subStatus', `✅ ${subs.length} líneas de subtítulos cargadas (${label})`, 'success');
+        switchTab('subtitles');
+    } catch (e) {
+        showStatus('subStatus', '❌ Error al cargar subtítulos: ' + e.message, 'error');
+    }
+}
+
+async function loadManualSubs() {
+    const url = document.getElementById('manualSubUrl').value.trim();
+    if (!url) return;
+    await loadAndViewSubs(url, 'xx', 'Manual');
+}
+
+// ─── Traducir inglés → español con Claude ────────────────────────
+async function loadAndTranslate(enUrl) {
+    if (!state.apiKey) {
+        showStatus('subStatus', '⚠️ Ingresa tu API key de Claude primero (sección 3)', 'warning');
+        return;
+    }
+    showStatus('subStatus', '⏳ Descargando subtítulos en inglés...', 'info');
+    try {
+        const content = await fetchSubtitleContent(enUrl);
+        const subs = parseSubtitles(content, enUrl);
+        await translateSubsWithClaude(subs);
+    } catch (e) {
+        showStatus('subStatus', '❌ ' + e.message, 'error');
+    }
+}
+
+async function translateEnToEs() {
+    if (!state.apiKey) {
+        showStatus('subStatus', '⚠️ Ingresa tu API key de Claude primero (sección 3)', 'warning');
+        return;
+    }
+    // Buscar el sub en inglés
+    const enSub = state.availableSubs.find(s => (s.lang || s.language || '').toLowerCase().startsWith('en'));
+    if (!enSub) {
+        showStatus('subStatus', '⚠️ No hay subtítulos en inglés disponibles para traducir', 'warning');
+        return;
+    }
+    const url = enSub.src || enSub.url || enSub.file || '';
+    if (!url) {
+        showStatus('subStatus', '⚠️ URL de subtítulos no disponible', 'warning');
+        return;
+    }
+    await loadAndTranslate(url);
+}
+
+async function translateSubsWithClaude(subs) {
+    const BATCH = 20; // líneas por llamada a Claude
+    const total = subs.length;
+    const translated = [];
+
+    showProgress(0, `Traduciendo 0 / ${total} líneas...`);
+    showStatus('subStatus', '🤖 Traduciendo con Claude AI...', 'info');
+
+    for (let i = 0; i < total; i += BATCH) {
+        const batch = subs.slice(i, i + BATCH);
+        const texts = batch.map(s => s.text.replace(/\n/g, ' '));
+
+        const prompt = `Traduce estos subtítulos del inglés al español. Mantén el mismo tono natural de un drama asiático. Devuelve SOLO un objeto JSON con una clave "t" que sea un array de strings con las traducciones en el mismo orden. Sin explicaciones ni texto extra.
+
+Textos:
+${JSON.stringify(texts)}`;
+
+        try {
+            const res = await fetch('https://api.anthropic.com/v1/messages', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-api-key': state.apiKey,
+                    'anthropic-version': '2023-06-01'
+                },
+                body: JSON.stringify({
+                    model: 'claude-sonnet-4-6',
+                    max_tokens: 1000,
+                    messages: [{ role: 'user', content: prompt }]
+                })
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.error?.message || `HTTP ${res.status}`);
+            }
+
+            const data = await res.json();
+            const rawText = data.content.map(c => c.text || '').join('');
+            
+            let parsed;
+            try {
+                const clean = rawText.replace(/```json|```/g, '').trim();
+                parsed = JSON.parse(clean);
+            } catch {
+                throw new Error('Respuesta inválida de Claude');
+            }
+
+            const translations = parsed.t || [];
+            batch.forEach((sub, j) => {
+                translated.push({
+                    ...sub,
+                    original: sub.text,
+                    text: translations[j] || sub.text
+                });
+            });
+
+        } catch (e) {
+            console.error('Error en batch:', e);
+            // En caso de error en un batch, mantener el original
+            batch.forEach(sub => translated.push({ ...sub, original: sub.text }));
+        }
+
+        const pct = Math.round(((i + BATCH) / total) * 100);
+        showProgress(Math.min(pct, 100), `Traduciendo ${Math.min(i + BATCH, total)} / ${total} líneas...`);
+        
+        // Pequeña pausa entre batches
+        if (i + BATCH < total) await sleep(200);
+    }
+
+    state.currentSubs = translated;
+    state.filteredSubs = translated;
+    renderSubEntries(translated, true);
+    hideProgress();
+    showStatus('subStatus', `✅ ${translated.length} líneas traducidas al español`, 'success');
+    switchTab('subtitles');
+}
+
+// ─── Descargar subtítulos ─────────────────────────────────────────
+function downloadSubs(format) {
+    if (!state.currentSubs.length) {
+        showStatus('subStatus', '⚠️ Primero carga o traduce unos subtítulos', 'warning');
+        return;
+    }
+    let content, mime, ext;
+    if (format === 'srt') {
+        content = toSRT(state.currentSubs);
+        mime = 'text/plain';
+        ext = 'srt';
+    } else {
+        content = toVTT(state.currentSubs);
+        mime = 'text/vtt';
+        ext = 'vtt';
+    }
+    const blob = new Blob([content], { type: mime + ';charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `subtitulos_es_ep${state.episodeId || 'x'}.${ext}`;
+    a.click();
+}
+
+// ─── Renderizar entradas de subtítulos ───────────────────────────
+function renderSubEntries(subs, showOriginal) {
+    const container = document.getElementById('subEntries');
+    container.innerHTML = '';
+    subs.forEach(sub => {
+        const div = document.createElement('div');
+        div.className = 'sub-entry';
+        div.innerHTML = `
+            <div class="sub-time">${fmtTime(sub.start)}</div>
+            <div>
+                <div class="sub-text">${escHtml(sub.text)}</div>
+                ${showOriginal && sub.original ? `<div class="sub-original">${escHtml(sub.original)}</div>` : ''}
+            </div>
+        `;
+        container.appendChild(div);
+    });
+}
+
+function filterSubs() {
+    const q = document.getElementById('subSearch').value.toLowerCase();
+    state.filteredSubs = q
+        ? state.currentSubs.filter(s => s.text.toLowerCase().includes(q) || (s.original || '').toLowerCase().includes(q))
+        : state.currentSubs;
+    renderSubEntries(state.filteredSubs, !!state.filteredSubs[0]?.original);
+}
+
+// ─── Parsers de subtítulos ───────────────────────────────────────
+async function fetchSubtitleContent(url) {
+    // Intentar directo primero
+    try {
+        const res = await fetch(url);
+        if (res.ok) return await res.text();
+    } catch {}
+    // Proxy
+    const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`);
+    if (!res.ok) throw new Error(`No se pudo descargar el archivo (HTTP ${res.status})`);
+    return await res.text();
+}
+
+function parseSubtitles(content, fileName) {
+    const isVTT = content.trim().startsWith('WEBVTT') || (fileName && fileName.includes('.vtt'));
+    if (isVTT) return parseVTT(content);
+    return parseSRT(content);
+}
+
+function parseSRT(content) {
+    const subs = [];
+    const blocks = content.trim().split(/\n\s*\n/);
+    for (const block of blocks) {
+        const lines = block.split('\n').filter(l => l.trim());
+        if (lines.length < 2) continue;
+        // Encontrar la línea de tiempo
+        let timeIdx = 0;
+        for (let i = 0; i < lines.length; i++) {
+            if (lines[i].includes('-->')) { timeIdx = i; break; }
+        }
+        const timeMatch = lines[timeIdx].match(/(\d{2}:\d{2}:\d{2}[,.]\d{3})\s*-->\s*(\d{2}:\d{2}:\d{2}[,.]\d{3})/);
+        if (!timeMatch) continue;
+        const text = lines.slice(timeIdx + 1).join('\n').trim();
+        if (!text) continue;
+        subs.push({
+            index: subs.length + 1,
+            start: timeToSec(timeMatch[1]),
+            end: timeToSec(timeMatch[2]),
+            text
+        });
+    }
+    return subs;
+}
+
+function parseVTT(content) {
+    const lines = content.split('\n');
+    let start = 0;
+    for (let i = 0; i < lines.length; i++) {
+        if (lines[i].trim().toUpperCase().startsWith('WEBVTT')) { start = i + 1; break; }
+    }
+    return parseSRT(lines.slice(start).join('\n'));
+}
+
+function timeToSec(t) {
+    t = t.replace(',', '.');
+    const p = t.split(':');
+    return parseInt(p[0]) * 3600 + parseInt(p[1]) * 60 + parseFloat(p[2]);
+}
+
+function fmtTime(sec) {
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = Math.floor(sec % 60);
+    return h > 0
+        ? `${h}:${pad(m)}:${pad(s)}`
+        : `${pad(m)}:${pad(s)}`;
+}
+
+function pad(n) { return String(n).padStart(2, '0'); }
+
+function toSRT(subs) {
+    return subs.map((s, i) => {
+        const st = secToSRT(s.start), en = secToSRT(s.end);
+        return `${i + 1}\n${st} --> ${en}\n${s.text}`;
+    }).join('\n\n');
+}
+
+function toVTT(subs) {
+    const body = subs.map(s => {
+        const st = secToVTT(s.start), en = secToVTT(s.end);
+        return `${st} --> ${en}\n${s.text}`;
+    }).join('\n\n');
+    return `WEBVTT\n\n${body}`;
+}
+
+function secToSRT(sec) {
+    const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60);
+    const s = Math.floor(sec % 60), ms = Math.round((sec % 1) * 1000);
+    return `${pad(h)}:${pad(m)}:${pad(s)},${String(ms).padStart(3,'0')}`;
+}
+function secToVTT(sec) { return secToSRT(sec).replace(',', '.'); }
+
+function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// Enter en el input
+document.getElementById('urlInput').addEventListener('keypress', e => {
+    if (e.key === 'Enter') loadEpisode();
+});
+</script>
 </body>
 </html>

@@ -1,5 +1,6 @@
 /**
  * Módulo para controlar el reproductor de video (Plyr)
+ * Versión corregida con mejor manejo de autoplay y CORS
  */
 class VideoPlayer {
     constructor() {
@@ -7,6 +8,8 @@ class VideoPlayer {
         this.videoElement = null;
         this.isInitialized = false;
         this.subtitleTracks = [];
+        this.isPlaying = false;
+        this.hasUserInteracted = false;
     }
     
     /**
@@ -18,6 +21,10 @@ class VideoPlayer {
         if (!this.videoElement) {
             throw new Error('Elemento de video no encontrado');
         }
+        
+        // ✅ Configurar atributos para mejor compatibilidad
+        this.videoElement.setAttribute('playsinline', '');
+        this.videoElement.setAttribute('crossorigin', 'anonymous');
         
         // Inicializar Plyr
         this.player = new Plyr(this.videoElement, {
@@ -36,12 +43,14 @@ class VideoPlayer {
             ],
             settings: ['captions', 'quality', 'speed'],
             captions: { active: true, update: true, language: 'es' },
-            keyboard: { focused: true, global: true }
+            keyboard: { focused: true, global: true },
+            // ✅ Desactivar autoplay por defecto para evitar errores
+            autoplay: false
         });
         
         this.isInitialized = true;
         
-        // Escuchar eventos del reproductor
+        // Configurar event listeners
         this.setupEventListeners();
         
         return this.player;
@@ -62,10 +71,31 @@ class VideoPlayer {
             console.error('Error en reproductor:', error);
             this.showStatus('Error al cargar el video', 'error');
         });
+        
+        // ✅ Detectar interacción del usuario con el reproductor
+        this.player.on('play', () => {
+            this.isPlaying = true;
+            this.hasUserInteracted = true;
+            console.log('▶️ Reproducción iniciada');
+        });
+        
+        this.player.on('pause', () => {
+            this.isPlaying = false;
+            console.log('⏸️ Reproducción pausada');
+        });
+        
+        // ✅ Detectar cuando el video está listo para reproducir
+        this.videoElement.addEventListener('loadedmetadata', () => {
+            console.log('📹 Metadatos del video cargados');
+        });
+        
+        this.videoElement.addEventListener('canplay', () => {
+            console.log('✅ Video listo para reproducir');
+        });
     }
     
     /**
-     * Carga un video desde una URL
+     * Carga un video con manejo mejorado de CORS y autoplay
      */
     loadVideo(url) {
         if (!this.player) {
@@ -76,18 +106,77 @@ class VideoPlayer {
             throw new Error('URL de video inválida');
         }
         
-        // Actualizar fuente del video
+        console.log('📹 Cargando video:', url);
+        
+        // ✅ Actualizar fuente del video
         const source = this.videoElement.querySelector('source');
         if (source) {
             source.src = url;
         }
         
-        // Recargar el video
+        // ✅ Configurar CORS
+        this.videoElement.crossOrigin = 'anonymous';
+        
+        // ✅ Recargar el video
         this.videoElement.load();
-        this.player.play();
+        
+        // ✅ Intentar reproducir automáticamente con manejo de errores mejorado
+        this.attemptAutoplay();
         
         this.showStatus('Video cargado correctamente', 'success');
         return true;
+    }
+    
+    /**
+     * Intenta reproducir automáticamente con manejo de errores
+     */
+    attemptAutoplay() {
+        if (!this.videoElement) return;
+        
+        // ✅ Si el usuario ya interactuó, podemos reproducir sin problemas
+        if (this.hasUserInteracted) {
+            const playPromise = this.videoElement.play();
+            if (playPromise !== undefined) {
+                playPromise
+                    .then(() => {
+                        console.log('✅ Reproducción automática iniciada (usuario ya interactuó)');
+                    })
+                    .catch(error => {
+                        console.warn('⚠️ Error en reproducción:', error);
+                    });
+            }
+            return;
+        }
+        
+        // ✅ Si no ha interactuado, intentar con muted (permite autoplay en Chrome)
+        const wasMuted = this.videoElement.muted;
+        this.videoElement.muted = true;
+        
+        const playPromise = this.videoElement.play();
+        if (playPromise !== undefined) {
+            playPromise
+                .then(() => {
+                    console.log('✅ Reproducción automática iniciada (con muted)');
+                    this.showStatus('▶️ Reproduciendo (sin audio). Haz clic en el altavoz para activar el sonido.', 'info');
+                    
+                    // ✅ Después de un momento, ofrecer activar el sonido
+                    setTimeout(() => {
+                        if (this.videoElement && !this.videoElement.muted) {
+                            // Si el usuario ya activó el sonido, no hacer nada
+                            return;
+                        }
+                        // Mostrar mensaje para activar sonido
+                        this.showStatus('🔊 Haz clic en el botón de volumen para activar el sonido', 'info');
+                    }, 1000);
+                })
+                .catch(error => {
+                    console.warn('⏸️ Autoplay bloqueado. Esperando interacción del usuario.', error);
+                    this.showStatus('⏸️ Haz clic en el botón de "Play" para reproducir el video', 'info');
+                    
+                    // ✅ Restaurar estado de muted si falló
+                    this.videoElement.muted = wasMuted;
+                });
+        }
     }
     
     /**
@@ -110,9 +199,13 @@ class VideoPlayer {
             throw new Error('Reproductor no inicializado');
         }
         
+        if (!subtitles || subtitles.length === 0) {
+            throw new Error('No hay subtítulos para agregar');
+        }
+        
         // Crear un archivo VTT en memoria
         const vttContent = this.subtitlesToVTT(subtitles);
-        const blob = new Blob([vttContent], { type: 'text/vtt' });
+        const blob = new Blob([vttContent], { type: 'text/vtt;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         
         // Eliminar tracks anteriores
@@ -130,18 +223,20 @@ class VideoPlayer {
         this.videoElement.appendChild(track);
         this.subtitleTracks.push(track);
         
-        // Forzar a Plyr a reconocer los nuevos subtítulos
-        this.player.trigger('captionsenabled');
-        this.player.trigger('languagechange');
-        
-        // Actualizar el selector de idiomas de Plyr
+        // ✅ Forzar a Plyr a reconocer los nuevos subtítulos
         setTimeout(() => {
-            if (this.player.elements && this.player.elements.captions) {
-                this.player.elements.captions.innerHTML = `<option value="es" selected>${label}</option>`;
+            if (this.player) {
+                this.player.trigger('captionsenabled');
+                this.player.trigger('languagechange');
+                
+                // ✅ Actualizar el selector de idiomas de Plyr
+                if (this.player.elements && this.player.elements.captions) {
+                    this.player.elements.captions.innerHTML = `<option value="${language}" selected>${label}</option>`;
+                }
             }
-        }, 100);
+        }, 200);
         
-        this.showStatus(`Subtítulos cargados: ${subtitles.length} bloques`, 'success');
+        this.showStatus(`✅ Subtítulos cargados: ${subtitles.length} bloques`, 'success');
         return true;
     }
     
@@ -165,6 +260,7 @@ class VideoPlayer {
      * Formatea tiempo para VTT (mm:ss.mmm)
      */
     formatTime(seconds) {
+        if (isNaN(seconds) || seconds < 0) seconds = 0;
         const minutes = Math.floor(seconds / 60);
         const secs = Math.floor(seconds % 60);
         const millis = Math.round((seconds % 1) * 1000);
@@ -203,6 +299,7 @@ class VideoPlayer {
         if (statusEl) {
             statusEl.textContent = message;
             statusEl.className = `status-message ${type}`;
+            statusEl.style.display = 'block';
         }
     }
 }

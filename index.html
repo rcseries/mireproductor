@@ -290,16 +290,7 @@
             flex-wrap: wrap;
         }
 
-        /* API key input */
-        .api-key-row {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-        .api-key-row input { flex: 1; font-size: 0.85rem; }
-        .key-hint { font-size: 0.78rem; color: var(--muted); margin-top: 6px; }
-        .key-hint a { color: var(--info); text-decoration: none; }
-        .key-hint a:hover { text-decoration: underline; }
+
 
         /* Tabs */
         .tabs { display: flex; gap: 2px; margin-bottom: 14px; }
@@ -384,18 +375,7 @@
         </div>
     </div>
 
-    <!-- Step 3: Claude API Key (for translation) -->
-    <div class="card" id="apiCard" style="display:none;">
-        <div class="card-title">3 · Traducción con Claude AI</div>
-        <div class="api-key-row">
-            <input type="text" id="apiKey" placeholder="sk-ant-api03-..." autocomplete="off">
-            <button class="btn btn-secondary" onclick="saveKey()">Guardar</button>
-        </div>
-        <div class="key-hint">
-            Necesitas una API key de Anthropic para traducir al español.<br>
-            Obtén la tuya gratis en <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>
-        </div>
-    </div>
+
 
     <!-- Subtitle viewer + Player -->
     <div class="card sub-viewer" id="subViewer">
@@ -437,12 +417,9 @@ let state = {
     availableSubs: [],    // [{lang, label, url}]
     currentSubs: [],      // [{index, start, end, text, original?}]
     filteredSubs: [],
-    apiKey: localStorage.getItem('claude_api_key') || ''
 };
 
-if (state.apiKey) {
-    document.getElementById('apiKey').value = state.apiKey;
-}
+
 
 // ─── UI helpers ──────────────────────────────────────────────────
 function showStatus(id, msg, type) {
@@ -472,12 +449,7 @@ function switchTab(name) {
         p.classList.toggle('active', ['subtitles','player'][i] === name);
     });
 }
-function saveKey() {
-    const k = document.getElementById('apiKey').value.trim();
-    if (k) { state.apiKey = k; localStorage.setItem('claude_api_key', k); }
-    showStatus('subStatus', '✅ API key guardada', 'success');
-    setTimeout(() => hideStatus('subStatus'), 2000);
-}
+
 
 // ─── Extraer episode ID de la URL ────────────────────────────────
 function extractEpisodeId(url) {
@@ -540,7 +512,6 @@ function showEpisodeInfo(epId) {
 // ─── Obtener subtítulos de la API de KissKH ──────────────────────
 async function loadAvailableSubtitles(epId) {
     document.getElementById('subsCard').style.display = 'block';
-    document.getElementById('apiCard').style.display = 'block';
     showStatus('subStatus', '🔍 Buscando subtítulos disponibles...', 'info');
 
     try {
@@ -637,8 +608,8 @@ function renderSubtitleList(subs) {
         transItem.style.cssText = 'background:rgba(232,75,107,0.08);border:1px solid rgba(232,75,107,0.25);border-radius:8px;padding:12px 14px;margin-bottom:8px;';
         transItem.innerHTML = `
             <div style="font-size:0.85rem;font-weight:600;color:var(--accent);margin-bottom:6px;">🤖 No hay subtítulos en español disponibles</div>
-            <div style="font-size:0.82rem;color:var(--muted);margin-bottom:10px;">Traduce los subtítulos en inglés al español usando Claude AI.</div>
-            <button class="btn btn-primary btn-sm" onclick="translateEnToEs()">Traducir Inglés → Español con Claude</button>
+            <div style="font-size:0.82rem;color:var(--muted);margin-bottom:10px;">Traduce los subtítulos en inglés al español automáticamente (gratis, sin registro).</div>
+            <button class="btn btn-primary btn-sm" onclick="translateEnToEs()">Traducir Inglés → Español</button>
         `;
         list.appendChild(transItem);
     }
@@ -662,7 +633,7 @@ function renderSubtitleList(subs) {
             </div>
             <div class="actions">
                 ${url ? `<button class="btn btn-secondary btn-sm" onclick="loadAndViewSubs('${url}','${lang}','${label}')">Ver</button>` : ''}
-                ${(isEn && !hasSpanish && url) ? `<button class="btn btn-primary btn-sm" onclick="loadAndTranslate('${url}')">→ ES</button>` : ''}
+                ${(isEn && !hasSpanish && url) ? `<button class="btn btn-primary btn-sm" onclick="loadAndTranslate('${url}')">→ Español</button>` : ''}
             </div>
         `;
         list.appendChild(item);
@@ -711,26 +682,17 @@ async function loadManualSubs() {
 
 // ─── Traducir inglés → español con Claude ────────────────────────
 async function loadAndTranslate(enUrl) {
-    if (!state.apiKey) {
-        showStatus('subStatus', '⚠️ Ingresa tu API key de Claude primero (sección 3)', 'warning');
-        return;
-    }
     showStatus('subStatus', '⏳ Descargando subtítulos en inglés...', 'info');
     try {
         const content = await fetchSubtitleContent(enUrl);
         const subs = parseSubtitles(content, enUrl);
-        await translateSubsWithClaude(subs);
+        await translateSubsMyMemory(subs);
     } catch (e) {
         showStatus('subStatus', '❌ ' + e.message, 'error');
     }
 }
 
 async function translateEnToEs() {
-    if (!state.apiKey) {
-        showStatus('subStatus', '⚠️ Ingresa tu API key de Claude primero (sección 3)', 'warning');
-        return;
-    }
-    // Buscar el sub en inglés
     const enSub = state.availableSubs.find(s => (s.lang || s.language || '').toLowerCase().startsWith('en'));
     if (!enSub) {
         showStatus('subStatus', '⚠️ No hay subtítulos en inglés disponibles para traducir', 'warning');
@@ -744,74 +706,39 @@ async function translateEnToEs() {
     await loadAndTranslate(url);
 }
 
-async function translateSubsWithClaude(subs) {
-    const BATCH = 20; // líneas por llamada a Claude
+// MyMemory: gratuita, sin API key, 1000 peticiones/día
+async function translateSubsMyMemory(subs) {
     const total = subs.length;
     const translated = [];
 
     showProgress(0, `Traduciendo 0 / ${total} líneas...`);
-    showStatus('subStatus', '🤖 Traduciendo con Claude AI...', 'info');
+    showStatus('subStatus', '🌐 Traduciendo con MyMemory (gratis)...', 'info');
 
-    for (let i = 0; i < total; i += BATCH) {
-        const batch = subs.slice(i, i + BATCH);
-        const texts = batch.map(s => s.text.replace(/\n/g, ' '));
+    for (let i = 0; i < total; i++) {
+        const sub = subs[i];
+        const text = sub.text.replace(/\n/g, ' ').trim();
 
-        const prompt = `Traduce estos subtítulos del inglés al español. Mantén el mismo tono natural de un drama asiático. Devuelve SOLO un objeto JSON con una clave "t" que sea un array de strings con las traducciones en el mismo orden. Sin explicaciones ni texto extra.
-
-Textos:
-${JSON.stringify(texts)}`;
-
+        let translatedText = text;
         try {
-            const res = await fetch('https://api.anthropic.com/v1/messages', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-api-key': state.apiKey,
-                    'anthropic-version': '2023-06-01'
-                },
-                body: JSON.stringify({
-                    model: 'claude-sonnet-4-6',
-                    max_tokens: 1000,
-                    messages: [{ role: 'user', content: prompt }]
-                })
-            });
-
-            if (!res.ok) {
-                const err = await res.json();
-                throw new Error(err.error?.message || `HTTP ${res.status}`);
+            const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|es`;
+            const res = await fetch(url);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.responseData && data.responseData.translatedText) {
+                    translatedText = data.responseData.translatedText;
+                }
             }
-
-            const data = await res.json();
-            const rawText = data.content.map(c => c.text || '').join('');
-            
-            let parsed;
-            try {
-                const clean = rawText.replace(/```json|```/g, '').trim();
-                parsed = JSON.parse(clean);
-            } catch {
-                throw new Error('Respuesta inválida de Claude');
-            }
-
-            const translations = parsed.t || [];
-            batch.forEach((sub, j) => {
-                translated.push({
-                    ...sub,
-                    original: sub.text,
-                    text: translations[j] || sub.text
-                });
-            });
-
         } catch (e) {
-            console.error('Error en batch:', e);
-            // En caso de error en un batch, mantener el original
-            batch.forEach(sub => translated.push({ ...sub, original: sub.text }));
+            console.warn('Error traduciendo línea', i, e);
         }
 
-        const pct = Math.round(((i + BATCH) / total) * 100);
-        showProgress(Math.min(pct, 100), `Traduciendo ${Math.min(i + BATCH, total)} / ${total} líneas...`);
-        
-        // Pequeña pausa entre batches
-        if (i + BATCH < total) await sleep(200);
+        translated.push({ ...sub, original: sub.text, text: translatedText });
+
+        const pct = Math.round(((i + 1) / total) * 100);
+        showProgress(pct, `Traduciendo ${i + 1} / ${total} líneas...`);
+
+        // Pausa para no sobrecargar la API gratuita
+        if (i < total - 1) await sleep(120);
     }
 
     state.currentSubs = translated;

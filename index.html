@@ -38,7 +38,6 @@
             margin: 0 auto;
         }
 
-        /* Header */
         header {
             text-align: center;
             margin-bottom: 32px;
@@ -59,7 +58,6 @@
             font-size: 0.9rem;
         }
 
-        /* Card */
         .card {
             background: var(--surface);
             border: 1px solid var(--border);
@@ -76,7 +74,6 @@
             margin-bottom: 12px;
         }
 
-        /* Input */
         .input-row {
             display: flex;
             gap: 10px;
@@ -98,7 +95,6 @@
         }
         input::placeholder { color: var(--muted); }
 
-        /* Buttons */
         .btn {
             padding: 11px 20px;
             border: none;
@@ -122,9 +118,13 @@
         }
         .btn-secondary:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
         .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+        .btn-sm {
+            padding: 5px 12px;
+            font-size: 0.78rem;
+            border-radius: 6px;
+        }
         .btn-full { width: 100%; margin-top: 10px; }
 
-        /* Status */
         .status {
             margin-top: 12px;
             padding: 10px 14px;
@@ -139,7 +139,6 @@
         .status.info    { background: rgba(74,158,255,0.12); color: var(--info);    border: 1px solid rgba(74,158,255,0.25); }
         .status.warning { background: rgba(245,166,35,0.12); color: var(--warning); border: 1px solid rgba(245,166,35,0.25); }
 
-        /* Progress */
         .progress-wrap { margin-top: 10px; display: none; }
         .progress-wrap.show { display: block; }
         .progress-bar {
@@ -161,7 +160,6 @@
             margin-top: 5px;
         }
 
-        /* Episode info */
         .episode-info {
             background: var(--surface2);
             border-radius: 8px;
@@ -190,47 +188,6 @@
             margin-top: 5px;
         }
 
-        /* Subtitles list */
-        .sub-list {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-top: 0;
-        }
-        .sub-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background: var(--surface2);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 10px 14px;
-            transition: border-color 0.2s;
-        }
-        .sub-item:hover { border-color: var(--accent); }
-        .sub-item .lang {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .lang-dot {
-            width: 8px; height: 8px;
-            border-radius: 50%;
-            background: var(--muted);
-            flex-shrink: 0;
-        }
-        .lang-dot.es { background: var(--success); }
-        .lang-dot.en { background: var(--info); }
-        .lang-name { font-size: 0.875rem; font-weight: 500; }
-        .lang-type { font-size: 0.75rem; color: var(--muted); margin-top: 1px; }
-        .sub-item .actions { display: flex; gap: 6px; }
-        .btn-sm {
-            padding: 5px 12px;
-            font-size: 0.78rem;
-            border-radius: 6px;
-        }
-
-        /* Player */
         .player-wrapper {
             position: relative;
             background: #000;
@@ -246,7 +203,6 @@
             display: block;
         }
 
-        /* Subtitle viewer */
         .sub-viewer {
             display: none;
         }
@@ -283,16 +239,12 @@
         .sub-text { font-size: 0.85rem; line-height: 1.5; }
         .sub-original { font-size: 0.75rem; color: var(--muted); margin-top: 3px; }
 
-        /* Download area */
         .dl-row {
             display: flex;
             gap: 8px;
             flex-wrap: wrap;
         }
 
-
-
-        /* Tabs */
         .tabs { display: flex; gap: 2px; margin-bottom: 14px; }
         .tab {
             padding: 7px 16px;
@@ -312,10 +264,8 @@
         .tab-panel { display: none; }
         .tab-panel.active { display: block; }
 
-        /* Divider */
         .divider { height: 1px; background: var(--border); margin: 16px 0; }
 
-        /* Help text */
         .help-block {
             background: rgba(74,158,255,0.08);
             border: 1px solid rgba(74,158,255,0.2);
@@ -332,6 +282,17 @@
             font-size: 0.8rem;
         }
 
+        .drop-zone {
+            background: var(--surface2);
+            border: 1px dashed var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color .2s;
+        }
+        .drop-zone:hover { border-color: var(--accent); }
+
         @media (max-width: 600px) {
             .input-row { flex-direction: column; }
             .dl-row { flex-direction: column; }
@@ -346,7 +307,7 @@
         <p>Carga cualquier episodio de KissKH con subtítulos en español</p>
     </header>
 
-    <!-- Step 1: URL -->
+    <!-- Step 1: URL del episodio -->
     <div class="card">
         <div class="card-title">1 · URL del episodio</div>
         <div class="input-row">
@@ -356,7 +317,7 @@
         </div>
         <div class="help-block" style="margin-top:12px;">
             Pega la URL completa del episodio. Necesitas el parámetro <code>ep=</code>.<br>
-            Ejemplo: <code>https://kisskh.co/Drama/Show-Name/Episode-1?id=1234&<strong>ep=214818</strong>&page=0&pageSize=100</code>
+            Ejemplo: <code>https://kisskh.co/Drama/Show-Name/Episode-9?id=1234&<strong>ep=214818</strong>&page=0&pageSize=100</code>
         </div>
         <div id="loadStatus" class="status"></div>
 
@@ -364,10 +325,51 @@
         <div id="episodeInfo" class="episode-info" style="margin-top:12px;"></div>
     </div>
 
-    <!-- Step 2: Subtitles -->
+    <!-- Step 2: Subtitles - Manual upload -->
     <div class="card" id="subsCard" style="display:none;">
-        <div class="card-title">2 · Subtítulos disponibles</div>
-        <div id="subList" class="sub-list"></div>
+        <div class="card-title">2 · Cargar subtítulos en inglés → traducir a español</div>
+
+        <div class="help-block" style="margin-bottom:14px;">
+            <strong>📌 Cómo obtener el archivo .SRT de inglés:</strong><br>
+            1. Abre el episodio en kisskh.co · 2. Abre las herramientas de desarrollador (F12) → pestaña Network<br>
+            3. Filtra por <code>.srt</code> o <code>.vtt</code> y copia la URL del archivo de subtítulos<br>
+            O simplemente <strong>descarga el .srt</strong> desde la red y súbelo aquí.
+        </div>
+
+        <div style="display:flex;gap:12px;margin-bottom:10px;flex-wrap:wrap;">
+            <!-- File upload -->
+            <div style="flex:1;min-width:200px;">
+                <div style="font-size:0.78rem;color:var(--muted);margin-bottom:5px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Subir archivo .SRT / .VTT</div>
+                <div class="drop-zone" onclick="document.getElementById('subFileInput').click()" id="dropZone">
+                    <div style="font-size:1.6rem;">📄</div>
+                    <div style="font-size:0.82rem;color:var(--muted);margin-top:4px;" id="dropLabel">Haz clic para seleccionar</div>
+                </div>
+                <input type="file" id="subFileInput" accept=".srt,.vtt,.txt" style="display:none" onchange="onFileSelected(event)">
+            </div>
+
+            <!-- OR divider -->
+            <div style="display:flex;align-items:center;color:var(--muted);font-size:0.82rem;padding:0 4px;">ó</div>
+
+            <!-- URL input -->
+            <div style="flex:2;min-width:220px;">
+                <div style="font-size:0.78rem;color:var(--muted);margin-bottom:5px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">URL directa del .SRT</div>
+                <div style="display:flex;gap:6px;">
+                    <input type="url" id="manualSubUrl" placeholder="https://ejemplo.com/subtitles.srt"
+                        style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-family:inherit;font-size:0.85rem;outline:none;">
+                    <button class="btn btn-secondary" onclick="loadManualSubsFromUrl()">Cargar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions after subs loaded -->
+        <div id="subActions" style="display:none;margin-top:12px;">
+            <div id="subLoaded" style="font-size:0.85rem;color:var(--success);margin-bottom:10px;"></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button class="btn btn-primary" onclick="startTranslation()">🌐 Traducir al Español (gratis)</button>
+                <button class="btn btn-secondary" onclick="viewCurrentSubs()">Ver subtítulos originales</button>
+            </div>
+        </div>
+
         <div id="subStatus" class="status"></div>
         <div id="subProgress" class="progress-wrap">
             <div class="progress-bar"><div class="progress-fill" id="subProgressFill"></div></div>
@@ -375,13 +377,11 @@
         </div>
     </div>
 
-
-
     <!-- Subtitle viewer + Player -->
     <div class="card sub-viewer" id="subViewer">
         <div class="tabs">
-            <button class="tab active" onclick="switchTab('subtitles')">Subtítulos</button>
-            <button class="tab" onclick="switchTab('player')">▶ Reproductor embed</button>
+            <button class="tab active" onclick="switchTab('subtitles')">📝 Subtítulos</button>
+            <button class="tab" onclick="switchTab('player')">▶ Reproductor</button>
         </div>
 
         <!-- Subtitles tab -->
@@ -399,12 +399,12 @@
         <!-- Player tab -->
         <div class="tab-panel" id="tab-player">
             <div class="player-wrapper show" id="playerWrapper">
-                <div id="playerContent" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:0.9rem;">
+                <div id="playerContent" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:0.9rem;background:#0d0f14;">
                     Carga un episodio para ver el reproductor embed
                 </div>
             </div>
             <p style="color:var(--muted);font-size:0.78rem;margin-top:10px;">
-                ℹ️ El reproductor embed de KissKH incluye sus subtítulos nativos. Los subtítulos en español que generaste arriba son independientes y puedes descargarlos para usarlos en cualquier reproductor.
+                ℹ️ El reproductor embed de KissKH ya incluye sus subtítulos nativos. Los subtítulos en español que generes aquí son independientes y puedes descargarlos para usarlos en cualquier reproductor.
             </p>
         </div>
     </div>
@@ -414,12 +414,10 @@
 // ─── Estado global ───────────────────────────────────────────────
 let state = {
     episodeId: null,
-    availableSubs: [],    // [{lang, label, url}]
-    currentSubs: [],      // [{index, start, end, text, original?}]
+    rawSubs: [],        // Subtítulos originales (inglés)
+    currentSubs: [],    // Subtítulos actuales (originales o traducidos)
     filteredSubs: [],
 };
-
-
 
 // ─── UI helpers ──────────────────────────────────────────────────
 function showStatus(id, msg, type) {
@@ -428,18 +426,20 @@ function showStatus(id, msg, type) {
     el.className = `status show ${type}`;
 }
 function hideStatus(id) {
-    document.getElementById(id).className = 'status';
+    const el = document.getElementById(id);
+    if (el) el.className = 'status';
 }
 function showProgress(pct, label) {
     const wrap = document.getElementById('subProgress');
     const fill = document.getElementById('subProgressFill');
     const lbl  = document.getElementById('subProgressLabel');
-    wrap.classList.add('show');
-    fill.style.width = pct + '%';
-    lbl.textContent = label || '';
+    if (wrap) wrap.classList.add('show');
+    if (fill) fill.style.width = pct + '%';
+    if (lbl) lbl.textContent = label || '';
 }
 function hideProgress() {
-    document.getElementById('subProgress').classList.remove('show');
+    const wrap = document.getElementById('subProgress');
+    if (wrap) wrap.classList.remove('show');
 }
 function switchTab(name) {
     document.querySelectorAll('.tab').forEach((t,i) => {
@@ -450,7 +450,6 @@ function switchTab(name) {
     });
 }
 
-
 // ─── Extraer episode ID de la URL ────────────────────────────────
 function extractEpisodeId(url) {
     try {
@@ -458,7 +457,6 @@ function extractEpisodeId(url) {
         const ep = u.searchParams.get('ep');
         if (ep && /^\d+$/.test(ep)) return ep;
     } catch {}
-    // fallback: buscar ep= en el string
     const m = url.match(/[?&]ep=(\d+)/);
     return m ? m[1] : null;
 }
@@ -466,7 +464,10 @@ function extractEpisodeId(url) {
 // ─── Cargar episodio ─────────────────────────────────────────────
 async function loadEpisode() {
     const url = document.getElementById('urlInput').value.trim();
-    if (!url) { showStatus('loadStatus', '⚠️ Pega una URL de KissKH', 'warning'); return; }
+    if (!url) {
+        showStatus('loadStatus', '⚠️ Pega una URL de KissKH', 'warning');
+        return;
+    }
 
     const epId = extractEpisodeId(url);
     if (!epId) {
@@ -478,7 +479,7 @@ async function loadEpisode() {
     document.getElementById('loadBtn').disabled = true;
     showStatus('loadStatus', `🔍 Cargando episodio ID ${epId}...`, 'info');
 
-    // Mostrar embed inmediatamente
+    // Mostrar el reproductor embed
     const playerContent = document.getElementById('playerContent');
     playerContent.innerHTML = `<iframe src="https://kisskh.megaplay.su/kisskh/${epId}?color=%23e84b6b" allowfullscreen></iframe>`;
     document.getElementById('playerContent').style.width = '100%';
@@ -491,8 +492,9 @@ async function loadEpisode() {
     // Mostrar info básica del episodio
     showEpisodeInfo(epId);
 
-    // Cargar subtítulos disponibles
-    await loadAvailableSubtitles(epId);
+    // Mostrar la sección de subtítulos (manual)
+    document.getElementById('subsCard').style.display = 'block';
+    showStatus('loadStatus', `✅ Episodio ${epId} cargado. Ahora carga un archivo de subtítulos en inglés.`, 'success');
 
     document.getElementById('loadBtn').disabled = false;
 }
@@ -502,211 +504,73 @@ function showEpisodeInfo(epId) {
     info.classList.add('show');
     info.innerHTML = `
         <div class="meta">
-            <h3>Episodio cargado</h3>
-            <p>Obteniendo subtítulos disponibles...</p>
-            <span class="ep-id-badge">EP ID: ${epId}</span>
+            <h3>✅ Episodio cargado</h3>
+            <p>ID: <span class="ep-id-badge">${epId}</span></p>
+            <p style="font-size:0.8rem;color:var(--muted);margin-top:4px;">Ahora carga el archivo de subtítulos en inglés para traducir al español</p>
         </div>
     `;
 }
 
-// ─── Obtener subtítulos de la API de KissKH ──────────────────────
-async function loadAvailableSubtitles(epId) {
-    document.getElementById('subsCard').style.display = 'block';
-    showStatus('subStatus', '🔍 Buscando subtítulos disponibles...', 'info');
-
-    try {
-        // API pública de kisskh para metadatos del episodio
-        const apiUrl = `https://kisskh.co/api/DramaList/Episode/${epId}.png?err=undefined&-1`;
-        
-        let subs = [];
+// ─── Cargar subtítulos desde archivo ─────────────────────────────
+function onFileSelected(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
         try {
-            const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(apiUrl)}`, {
-                headers: { 'Referer': 'https://kisskh.co/' }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                // La API devuelve un array de objetos de subtítulos
-                if (data && data.subtitles) {
-                    subs = data.subtitles;
-                } else if (Array.isArray(data)) {
-                    subs = data;
-                }
-            }
-        } catch(e) {
-            console.warn('API directa falló, usando alternativa:', e);
+            const subs = parseSubtitles(e.target.result, file.name);
+            state.rawSubs = subs;
+            state.currentSubs = subs;
+            state.filteredSubs = subs;
+            document.getElementById('dropLabel').textContent = `✅ ${file.name} (${subs.length} líneas)`;
+            document.getElementById('subLoaded').textContent = `${subs.length} líneas cargadas desde "${file.name}"`;
+            document.getElementById('subActions').style.display = 'block';
+            hideStatus('subStatus');
+            showStatus('subStatus', `✅ ${subs.length} líneas cargadas correctamente`, 'success');
+        } catch(err) {
+            showStatus('subStatus', '❌ Error leyendo archivo: ' + err.message, 'error');
         }
-
-        // Si la API directa no dio resultados, intentar con la API alternativa
-        if (subs.length === 0) {
-            try {
-                const altUrl = `https://nyawit-kisskh-api-nodejs.vercel.app/api/Sub/${epId}`;
-                const res2 = await fetch(altUrl);
-                if (res2.ok) {
-                    const data2 = await res2.json();
-                    if (Array.isArray(data2)) subs = data2;
-                    else if (data2.subtitles) subs = data2.subtitles;
-                }
-            } catch(e2) {
-                console.warn('API alternativa también falló:', e2);
-            }
-        }
-
-        if (subs.length > 0) {
-            state.availableSubs = subs;
-            renderSubtitleList(subs);
-            showStatus('loadStatus', `✅ Episodio ${epId} cargado. Se encontraron ${subs.length} pistas de subtítulos.`, 'success');
-            document.getElementById('episodeInfo').querySelector('p').textContent = `${subs.length} idiomas de subtítulos disponibles`;
-        } else {
-            // Si no hay subtítulos en la API, ofrecer solo traducción
-            renderSubtitleListFallback(epId);
-            showStatus('loadStatus', `✅ Episodio ${epId} cargado. No se encontraron subtítulos en la API — puedes generarlos en español con Claude.`, 'warning');
-            document.getElementById('episodeInfo').querySelector('p').textContent = 'Subtítulos no disponibles en la API';
-        }
-
-    } catch (err) {
-        console.error(err);
-        renderSubtitleListFallback(epId);
-        showStatus('loadStatus', '⚠️ No se pudieron obtener subtítulos de la API de KissKH. Puedes generar subtítulos en español con Claude.', 'warning');
-    }
+    };
+    reader.readAsText(file, 'UTF-8');
 }
 
-// ─── Renderizar lista de subtítulos ──────────────────────────────
-const LANG_NAMES = {
-    'en': 'Inglés', 'es': 'Español', 'zh': 'Chino', 'ko': 'Coreano',
-    'ja': 'Japonés', 'th': 'Tailandés', 'id': 'Indonesio', 'vi': 'Vietnamita',
-    'pt': 'Portugués', 'fr': 'Francés', 'ar': 'Árabe', 'de': 'Alemán',
-    'ru': 'Ruso', 'tr': 'Turco', 'ms': 'Malayo'
-};
-
-function getLangName(code) {
-    if (!code) return 'Desconocido';
-    const c = code.toLowerCase().substring(0,2);
-    return LANG_NAMES[c] || code;
-}
-
-function renderSubtitleList(subs) {
-    const list = document.getElementById('subList');
-    
-    // Ordenar: español primero, luego inglés, luego el resto
-    const sorted = [...subs].sort((a, b) => {
-        const la = (a.lang || a.language || '').toLowerCase();
-        const lb = (b.lang || b.language || '').toLowerCase();
-        if (la.startsWith('es')) return -1;
-        if (lb.startsWith('es')) return 1;
-        if (la.startsWith('en')) return -1;
-        if (lb.startsWith('en')) return 1;
-        return 0;
-    });
-
-    const hasSpanish = sorted.some(s => (s.lang || s.language || '').toLowerCase().startsWith('es'));
-
-    list.innerHTML = '';
-
-    if (!hasSpanish) {
-        // Mostrar opción de traducir
-        const transItem = document.createElement('div');
-        transItem.style.cssText = 'background:rgba(232,75,107,0.08);border:1px solid rgba(232,75,107,0.25);border-radius:8px;padding:12px 14px;margin-bottom:8px;';
-        transItem.innerHTML = `
-            <div style="font-size:0.85rem;font-weight:600;color:var(--accent);margin-bottom:6px;">🤖 No hay subtítulos en español disponibles</div>
-            <div style="font-size:0.82rem;color:var(--muted);margin-bottom:10px;">Traduce los subtítulos en inglés al español automáticamente (gratis, sin registro).</div>
-            <button class="btn btn-primary btn-sm" onclick="translateEnToEs()">Traducir Inglés → Español</button>
-        `;
-        list.appendChild(transItem);
-    }
-
-    sorted.forEach(sub => {
-        const lang = sub.lang || sub.language || '?';
-        const label = sub.label || getLangName(lang);
-        const url = sub.src || sub.url || sub.file || '';
-        const isEs = lang.toLowerCase().startsWith('es');
-        const isEn = lang.toLowerCase().startsWith('en');
-
-        const item = document.createElement('div');
-        item.className = 'sub-item';
-        item.innerHTML = `
-            <div class="lang">
-                <div class="lang-dot ${isEs ? 'es' : isEn ? 'en' : ''}"></div>
-                <div>
-                    <div class="lang-name">${label} ${isEs ? '🇪🇸' : isEn ? '🇺🇸' : ''}</div>
-                    <div class="lang-type">${lang.toUpperCase()}</div>
-                </div>
-            </div>
-            <div class="actions">
-                ${url ? `<button class="btn btn-secondary btn-sm" onclick="loadAndViewSubs('${url}','${lang}','${label}')">Ver</button>` : ''}
-                ${(isEn && !hasSpanish && url) ? `<button class="btn btn-primary btn-sm" onclick="loadAndTranslate('${url}')">→ Español</button>` : ''}
-            </div>
-        `;
-        list.appendChild(item);
-    });
-}
-
-function renderSubtitleListFallback(epId) {
-    const list = document.getElementById('subList');
-    list.innerHTML = `
-        <div style="background:rgba(245,166,35,0.08);border:1px solid rgba(245,166,35,0.25);border-radius:8px;padding:14px;">
-            <div style="font-size:0.85rem;font-weight:600;color:var(--warning);margin-bottom:6px;">⚠️ Subtítulos no encontrados en la API</div>
-            <div style="font-size:0.82rem;color:var(--muted);margin-bottom:10px;">
-                Esto puede ocurrir si el episodio es muy nuevo o usa una API diferente.<br>
-                Prueba con la URL de subtítulos directa si la tienes.
-            </div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                <input type="url" id="manualSubUrl" placeholder="URL del .srt o .vtt de subtítulos" 
-                    style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text);font-family:inherit;font-size:0.82rem;outline:none;min-width:200px;">
-                <button class="btn btn-secondary btn-sm" onclick="loadManualSubs()">Cargar</button>
-            </div>
-        </div>
-    `;
-}
-
-// ─── Cargar y ver subtítulos ──────────────────────────────────────
-async function loadAndViewSubs(url, lang, label) {
-    showStatus('subStatus', `⏳ Cargando subtítulos (${label})...`, 'info');
+async function loadManualSubsFromUrl() {
+    const url = document.getElementById('manualSubUrl').value.trim();
+    if (!url) return;
+    showStatus('subStatus', '⏳ Descargando archivo de subtítulos...', 'info');
     try {
         const content = await fetchSubtitleContent(url);
         const subs = parseSubtitles(content, url);
+        state.rawSubs = subs;
         state.currentSubs = subs;
         state.filteredSubs = subs;
-        renderSubEntries(subs, false);
-        showStatus('subStatus', `✅ ${subs.length} líneas de subtítulos cargadas (${label})`, 'success');
-        switchTab('subtitles');
-    } catch (e) {
-        showStatus('subStatus', '❌ Error al cargar subtítulos: ' + e.message, 'error');
+        document.getElementById('subLoaded').textContent = `${subs.length} líneas cargadas desde URL`;
+        document.getElementById('subActions').style.display = 'block';
+        showStatus('subStatus', `✅ ${subs.length} líneas cargadas`, 'success');
+    } catch(e) {
+        showStatus('subStatus', '❌ No se pudo descargar: ' + e.message, 'error');
     }
 }
 
-async function loadManualSubs() {
-    const url = document.getElementById('manualSubUrl').value.trim();
-    if (!url) return;
-    await loadAndViewSubs(url, 'xx', 'Manual');
-}
-
-// ─── Traducir inglés → español con Claude ────────────────────────
-async function loadAndTranslate(enUrl) {
-    showStatus('subStatus', '⏳ Descargando subtítulos en inglés...', 'info');
-    try {
-        const content = await fetchSubtitleContent(enUrl);
-        const subs = parseSubtitles(content, enUrl);
-        await translateSubsMyMemory(subs);
-    } catch (e) {
-        showStatus('subStatus', '❌ ' + e.message, 'error');
-    }
-}
-
-async function translateEnToEs() {
-    const enSub = state.availableSubs.find(s => (s.lang || s.language || '').toLowerCase().startsWith('en'));
-    if (!enSub) {
-        showStatus('subStatus', '⚠️ No hay subtítulos en inglés disponibles para traducir', 'warning');
+function viewCurrentSubs() {
+    if (!state.currentSubs.length) {
+        showStatus('subStatus', '⚠️ Primero carga un archivo de subtítulos', 'warning');
         return;
     }
-    const url = enSub.src || enSub.url || enSub.file || '';
-    if (!url) {
-        showStatus('subStatus', '⚠️ URL de subtítulos no disponible', 'warning');
-        return;
-    }
-    await loadAndTranslate(url);
+    renderSubEntries(state.currentSubs, !!state.currentSubs[0]?.original);
+    switchTab('subtitles');
+    document.getElementById('subViewer').classList.add('show');
 }
 
-// MyMemory: gratuita, sin API key, 1000 peticiones/día
+// ─── Traducir con MyMemory (gratuita) ─────────────────────────────
+async function startTranslation() {
+    if (!state.rawSubs || !state.rawSubs.length) {
+        showStatus('subStatus', '⚠️ Primero carga un archivo de subtítulos', 'warning');
+        return;
+    }
+    await translateSubsMyMemory(state.rawSubs);
+}
+
 async function translateSubsMyMemory(subs) {
     const total = subs.length;
     const translated = [];
@@ -737,7 +601,6 @@ async function translateSubsMyMemory(subs) {
         const pct = Math.round(((i + 1) / total) * 100);
         showProgress(pct, `Traduciendo ${i + 1} / ${total} líneas...`);
 
-        // Pausa para no sobrecargar la API gratuita
         if (i < total - 1) await sleep(120);
     }
 
@@ -776,6 +639,10 @@ function downloadSubs(format) {
 function renderSubEntries(subs, showOriginal) {
     const container = document.getElementById('subEntries');
     container.innerHTML = '';
+    if (!subs || !subs.length) {
+        container.innerHTML = '<div style="color:var(--muted);text-align:center;padding:20px;">No hay subtítulos cargados</div>';
+        return;
+    }
     subs.forEach(sub => {
         const div = document.createElement('div');
         div.className = 'sub-entry';
@@ -800,12 +667,10 @@ function filterSubs() {
 
 // ─── Parsers de subtítulos ───────────────────────────────────────
 async function fetchSubtitleContent(url) {
-    // Intentar directo primero
     try {
         const res = await fetch(url);
         if (res.ok) return await res.text();
     } catch {}
-    // Proxy
     const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`);
     if (!res.ok) throw new Error(`No se pudo descargar el archivo (HTTP ${res.status})`);
     return await res.text();
@@ -823,7 +688,6 @@ function parseSRT(content) {
     for (const block of blocks) {
         const lines = block.split('\n').filter(l => l.trim());
         if (lines.length < 2) continue;
-        // Encontrar la línea de tiempo
         let timeIdx = 0;
         for (let i = 0; i < lines.length; i++) {
             if (lines[i].includes('-->')) { timeIdx = i; break; }

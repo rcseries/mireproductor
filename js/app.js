@@ -1,6 +1,5 @@
 /**
- * Aplicación principal - Versión Corregida
- * Soluciona problemas de: CORS, autoplay, y carga de subtítulos
+ * Aplicación principal - Versión Corregida con mejor manejo de CORS
  */
 class App {
     constructor() {
@@ -9,12 +8,14 @@ class App {
         this.translatedSubtitles = null;
         this.isProcessing = false;
         this.subtitleSource = 'auto';
+        // ✅ Proxies más confiables
         this.corsProxies = [
-            'https://api.allorigins.win/raw?url=',  // Proxy principal (más estable)
-            'https://corsproxy.io/?',
-            'https://cors-anywhere.herokuapp.com/'
+            'https://api.allorigins.win/raw?url=',
+            'https://thingproxy.freeboard.io/fetch/',
+            'https://corsproxy.io/?'
         ];
         this.currentProxyIndex = 0;
+        this.useProxy = true;
         
         // Referencias a elementos DOM
         this.elements = {
@@ -121,32 +122,20 @@ class App {
      * Configura todos los event listeners
      */
     setupEventListeners() {
-        // Botón cargar video
         this.elements.loadBtn.addEventListener('click', () => this.handleLoad());
-        
-        // Botón obtener subtítulos
         this.elements.subtitlesBtn.addEventListener('click', () => this.handleSubtitles());
-        
-        // Botón traducir
         this.elements.translateBtn.addEventListener('click', () => this.handleTranslate());
         
-        // Enter en campo URL de video
         this.elements.videoUrl.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                this.handleLoad();
-            }
+            if (e.key === 'Enter') this.handleLoad();
         });
         
-        // Enter en campo URL de subtítulos
         if (this.elements.subtitleUrl) {
             this.elements.subtitleUrl.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    this.handleSubtitles();
-                }
+                if (e.key === 'Enter') this.handleSubtitles();
             });
         }
         
-        // Cambio en archivo de subtítulos
         if (this.elements.subtitleFile) {
             this.elements.subtitleFile.addEventListener('change', (e) => {
                 if (e.target.files.length > 0) {
@@ -163,20 +152,19 @@ class App {
      * Carga un video con soporte para CORS
      */
     loadDemoVideo() {
-        // Usar un video que permita CORS para demostración
-        const demoUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
+        // ✅ Usar un video de demostración que funcione (de otro servidor)
+        const demoUrl = 'https://www.w3schools.com/html/mov_bbb.mp4';
         if (this.elements.videoUrl) {
             this.elements.videoUrl.value = demoUrl;
         }
         
-        // Cargar automáticamente después de un momento
         setTimeout(() => {
             this.handleLoad();
         }, 500);
     }
     
     /**
-     * Maneja la carga del video (CORREGIDO para CORS y Autoplay)
+     * Maneja la carga del video (CORREGIDO)
      */
     async handleLoad() {
         if (this.isProcessing) return;
@@ -191,20 +179,18 @@ class App {
                 throw new Error('Por favor ingresa una URL de video');
             }
             
-            // ✅ Manejar CORS: Si es de kisskh u otros sitios bloqueados, usar proxy
-            if (this.isCorsBlockedUrl(url)) {
+            // ✅ Si es de kisskh u otros sitios bloqueados, usar proxy
+            if (this.isCorsBlockedUrl(url) && this.useProxy) {
                 const proxyUrl = await this.getWorkingProxy(url);
                 if (proxyUrl) {
                     this.showStatus('🔄 Usando proxy para evitar bloqueos CORS...', 'info');
                     url = proxyUrl;
                 } else {
-                    this.showStatus('⚠️ No se pudo encontrar un proxy funcional. Intentando cargar directamente...', 'warning');
+                    this.showStatus('⚠️ No se pudo usar proxy. Intentando cargar directamente...', 'warning');
                 }
             }
             
             this.videoUrl = url;
-            
-            // ✅ Cargar el video en el reproductor (ya maneja autoplay)
             videoPlayer.loadVideo(url);
             
             this.showStatus('✅ Video cargado correctamente. Ahora obtén los subtítulos.', 'success');
@@ -225,7 +211,9 @@ class App {
     isCorsBlockedUrl(url) {
         const blockedDomains = [
             'kisskh', 'kissasian', 'dramacool', 'myasiantv',
-            'stream', '.do', '.to', 'openload', 'rapidvideo'
+            'stream', '.do', '.to', 'openload', 'rapidvideo',
+            'storage.googleapis.com', // Google Cloud Storage también bloquea
+            'cloudfront.net'
         ];
         return blockedDomains.some(domain => url.toLowerCase().includes(domain));
     }
@@ -234,37 +222,41 @@ class App {
      * Intenta obtener un proxy funcional para la URL
      */
     async getWorkingProxy(url) {
-        // Probar cada proxy hasta encontrar uno que funcione
+        // ✅ Probar cada proxy con timeout
         for (let i = 0; i < this.corsProxies.length; i++) {
             const proxy = this.corsProxies[i];
             const proxyUrl = `${proxy}${encodeURIComponent(url)}`;
             
             try {
                 this.showStatus(`🔄 Probando proxy ${i + 1}/${this.corsProxies.length}...`, 'info');
-                // Hacer una petición de prueba al proxy
+                
+                // ✅ Usar fetch con timeout
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 8000);
+                
                 const response = await fetch(proxyUrl, {
                     method: 'HEAD',
                     mode: 'cors',
-                    signal: AbortSignal.timeout(5000) // Timeout de 5 segundos
+                    signal: controller.signal
                 });
                 
-                if (response.ok || response.status === 403) {
-                    // Si responde (incluso con 403), es porque el proxy está activo
-                    this.currentProxyIndex = i;
-                    return proxyUrl;
-                }
+                clearTimeout(timeoutId);
+                
+                // ✅ Si responde (incluso con error), el proxy está activo
+                this.currentProxyIndex = i;
+                return proxyUrl;
+                
             } catch (error) {
                 console.warn(`Proxy ${i + 1} falló:`, error.message);
                 continue;
             }
         }
         
-        // Si ningún proxy funciona, devolver null
         return null;
     }
     
     /**
-     * Maneja la obtención de subtítulos (CORREGIDO)
+     * Maneja la obtención de subtítulos
      */
     async handleSubtitles() {
         if (this.isProcessing) return;
@@ -373,7 +365,6 @@ class App {
      * Genera subtítulos con IA (speech-to-text)
      */
     async getSubtitlesGenerate() {
-        // Verificar soporte del navegador
         if (!SubtitleGenerator.isSupported()) {
             throw new Error('Tu navegador no soporta generación de subtítulos por voz. Usa Chrome.');
         }
@@ -388,13 +379,11 @@ class App {
             throw new Error('El video no está cargado o es inválido. Asegúrate de que el video se haya cargado correctamente.');
         }
         
-        // Verificar que el video tenga audio
         if (videoElement.muted) {
             this.showStatus('ℹ️ El video está silenciado. Activando audio para generar subtítulos...', 'info');
             videoElement.muted = false;
         }
         
-        // Obtener opciones
         const translateCheck = document.getElementById('translateGenerated');
         const translate = translateCheck ? translateCheck.checked : true;
         
@@ -402,7 +391,6 @@ class App {
         this.showProgress(0);
         
         try {
-            // Generar subtítulos
             const subtitles = await subtitleGenerator.generateSubtitles(
                 videoElement,
                 (progress) => {
@@ -414,10 +402,9 @@ class App {
             );
             
             if (!subtitles || subtitles.length === 0) {
-                throw new Error('No se generaron subtítulos. Asegúrate de que el video tenga audio en inglés.');
+                throw new Error('No se generaron subtítulos. Asegúrate de que el video tenga audio.');
             }
             
-            // Traducir si está habilitado
             if (translate) {
                 this.showStatus('🔄 Traduciendo subtítulos generados al español...', 'info');
                 this.showProgress(0);
@@ -452,7 +439,6 @@ class App {
             return;
         }
         
-        // Verificar si ya están traducidos
         if (this.translatedSubtitles) {
             this.showStatus('ℹ️ Los subtítulos ya están traducidos', 'info');
             return;
@@ -475,18 +461,12 @@ class App {
                 }
             );
             
-            // Actualizar interfaz
             this.updateSubtitleInfo(this.translatedSubtitles, 'Traducidos');
-            
-            // Cargar subtítulos traducidos en el reproductor
             videoPlayer.addSubtitles(this.translatedSubtitles, 'es', 'Español (Traducido)');
             
             this.showStatus(`✅ Traducción completada: ${this.translatedSubtitles.length} subtítulos traducidos al español`, 'success');
-            
-            // Mostrar ejemplo de traducción
             this.showTranslationExample();
             
-            // Cambiar texto del botón
             this.elements.translateBtn.textContent = '¡Traducido!';
             setTimeout(() => {
                 this.elements.translateBtn.textContent = 'Traducir al Español';
@@ -514,18 +494,13 @@ class App {
             return;
         }
         
-        // Calcular estadísticas
         const totalBlocks = subtitles.length;
         const totalWords = subtitles.reduce((sum, sub) => sum + (sub.text ? sub.text.split(/\s+/).length : 0), 0);
-        const totalChars = subtitles.reduce((sum, sub) => sum + (sub.text ? sub.text.length : 0), 0);
         const totalDuration = subtitles[subtitles.length - 1]?.end || 0;
-        
-        // Formatear duración
         const minutes = Math.floor(totalDuration / 60);
         const seconds = Math.floor(totalDuration % 60);
         const durationStr = `${minutes}:${String(seconds).padStart(2, '0')}`;
         
-        // Mostrar primeros 3 subtítulos como ejemplo
         const examples = subtitles.slice(0, 3).map(sub => {
             const text = sub.text || '';
             return `"${text.substring(0, 60)}${text.length > 60 ? '...' : ''}"`;
@@ -533,28 +508,14 @@ class App {
         
         infoEl.innerHTML = `
             <div class="subtitle-stats">
-                <div class="stat-item">
-                    <strong>${type}:</strong>
-                </div>
-                <div class="stat-item">
-                    <strong>Bloques:</strong> ${totalBlocks}
-                </div>
-                <div class="stat-item">
-                    <strong>Palabras:</strong> ${totalWords}
-                </div>
-                <div class="stat-item">
-                    <strong>Caracteres:</strong> ${totalChars}
-                </div>
-                <div class="stat-item">
-                    <strong>Duración:</strong> ${durationStr}
-                </div>
-                <div class="stat-item">
-                    <strong>Idioma:</strong> ${type === 'Originales' ? 'Original' : 'Español'}
-                </div>
+                <div class="stat-item"><strong>${type}:</strong></div>
+                <div class="stat-item"><strong>Bloques:</strong> ${totalBlocks}</div>
+                <div class="stat-item"><strong>Palabras:</strong> ${totalWords}</div>
+                <div class="stat-item"><strong>Duración:</strong> ${durationStr}</div>
+                <div class="stat-item"><strong>Idioma:</strong> ${type === 'Originales' ? 'Original' : 'Español'}</div>
             </div>
             <div style="margin-top: 8px; font-size: 0.9rem; color: #718096;">
-                ${examples}
-                ${subtitles.length > 3 ? ' <span style="color: #a0aec0;">...y más</span>' : ''}
+                ${examples} ${subtitles.length > 3 ? '<span style="color: #a0aec0;">...y más</span>' : ''}
             </div>
         `;
     }
@@ -574,8 +535,7 @@ class App {
         const infoEl = this.elements.subtitleInfo;
         if (!infoEl) return;
         
-        // Crear mensaje de ejemplo
-        const exampleHTML = `
+        infoEl.innerHTML += `
             <div style="margin-top: 15px; padding: 12px; background: #ebf8ff; border-radius: 8px; border-left: 4px solid #3182ce;">
                 <p style="margin: 0; font-weight: 600; color: #2a4365;">📝 Ejemplo de traducción:</p>
                 <p style="margin: 5px 0 0 0; color: #4a5568; font-size: 0.9rem;">
@@ -586,8 +546,6 @@ class App {
                 </p>
             </div>
         `;
-        
-        infoEl.innerHTML += exampleHTML;
     }
     
     /**
@@ -601,15 +559,7 @@ class App {
         if (fill) {
             const pct = Math.min(Math.max(percentage, 0), 100);
             fill.style.width = `${pct}%`;
-            
-            // Cambiar color según progreso
-            if (pct < 30) {
-                fill.style.background = '#fc8181';
-            } else if (pct < 70) {
-                fill.style.background = '#f6ad55';
-            } else {
-                fill.style.background = '#68d391';
-            }
+            fill.style.background = pct < 30 ? '#fc8181' : pct < 70 ? '#f6ad55' : '#68d391';
         }
     }
     
@@ -631,23 +581,20 @@ class App {
             statusEl.className = `status-message ${type}`;
             statusEl.style.display = 'block';
             
-            // Auto-ocultar mensajes de éxito después de 5 segundos
             if (type === 'success') {
                 clearTimeout(this.statusTimeout);
                 this.statusTimeout = setTimeout(() => {
-                    if (statusEl) {
-                        statusEl.style.display = 'none';
-                    }
+                    if (statusEl) statusEl.style.display = 'none';
                 }, 5000);
             }
         }
     }
 }
 
-// Inicializar la aplicación cuando el DOM esté listo
+// Inicializar
 document.addEventListener('DOMContentLoaded', () => {
     const app = new App();
-    window.app = app; // Para debugging en consola
+    window.app = app;
     console.log('🎬 Aplicación de reproductor iniciada');
     console.log('ℹ️ Usa window.app para acceder a la instancia');
 });

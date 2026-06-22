@@ -431,7 +431,7 @@
         <div id="subActions" style="display:none;margin-top:12px;">
             <div id="subLoaded" style="font-size:0.85rem;color:var(--success);margin-bottom:10px;"></div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                <button class="btn btn-primary" onclick="startTranslation()">🌐 Traducir al Español (gratis)</button>
+                <button class="btn btn-primary" onclick="startTranslation()">🌐 Traducir al Español (Google)</button>
                 <button class="btn btn-secondary" onclick="viewCurrentSubs()">Ver subtítulos</button>
             </div>
         </div>
@@ -506,16 +506,12 @@ async function loadVideo() {
         return;
     }
 
-    // Intentar extraer ep= si es URL de episodio
     let epId = extractEpisodeId(url);
     let videoUrl = url;
 
     if (epId) {
-        // Es URL de episodio, usar el embed de megaplay
         state.episodeId = epId;
         showStatus('loadStatus', `🔍 Episodio ID ${epId} detectado. Usando reproductor embed...`, 'info');
-        // Para videos de kisskh, no podemos obtener el stream directo por CORS
-        // Mostramos el embed en su lugar
         document.getElementById('loadBtn').disabled = true;
         document.getElementById('playerCard').style.display = 'block';
         document.getElementById('playerContainer').innerHTML = `
@@ -529,7 +525,7 @@ async function loadVideo() {
         return;
     }
 
-    // Es URL directa de video, usar reproductor nativo
+    // URL directa de video
     state.videoUrl = url;
     video.src = url;
     video.load();
@@ -550,7 +546,6 @@ async function loadVideo() {
         document.getElementById('loadBtn').disabled = false;
     };
 
-    // Actualizar tiempo
     video.ontimeupdate = updateSubtitle;
     setInterval(updateTimeDisplay, 1000);
 }
@@ -609,7 +604,6 @@ function updateSubtitle() {
         return;
     }
 
-    // Buscar el subtítulo activo (con margen de 0.5s)
     const active = subs.find(s => currentTime >= s.start - 0.3 && currentTime <= s.end + 0.3);
     if (active) {
         overlay.querySelector('span').textContent = active.text;
@@ -688,21 +682,21 @@ function viewCurrentSubs() {
     document.getElementById('subViewer').classList.add('show');
 }
 
-// ─── Traducir con MyMemory ──────────────────────────────────────
+// ─── Traducir con Google Translate (sin límite) ──────────────────
 async function startTranslation() {
     if (!state.rawSubs || !state.rawSubs.length) {
         showStatus('subStatus', '⚠️ Primero carga un archivo de subtítulos', 'warning');
         return;
     }
-    await translateSubsMyMemory(state.rawSubs);
+    await translateSubsGoogle(state.rawSubs);
 }
 
-async function translateSubsMyMemory(subs) {
+async function translateSubsGoogle(subs) {
     const total = subs.length;
     const translated = [];
 
     showProgress(0, `Traduciendo 0 / ${total} líneas...`);
-    showStatus('subStatus', '🌐 Traduciendo con MyMemory (gratis)...', 'info');
+    showStatus('subStatus', '🌐 Traduciendo con Google Translate (gratis)...', 'info');
 
     for (let i = 0; i < total; i++) {
         const sub = subs[i];
@@ -710,12 +704,13 @@ async function translateSubsMyMemory(subs) {
 
         let translatedText = text;
         try {
-            const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|es`;
+            // Usamos la API gratuita de Google Translate via translate.googleapis.com
+            const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=es&dt=t&q=${encodeURIComponent(text)}`;
             const res = await fetch(url);
             if (res.ok) {
                 const data = await res.json();
-                if (data.responseData && data.responseData.translatedText) {
-                    translatedText = data.responseData.translatedText;
+                if (data && data[0]) {
+                    translatedText = data[0].map(item => item[0]).join('');
                 }
             }
         } catch (e) {
@@ -726,7 +721,7 @@ async function translateSubsMyMemory(subs) {
 
         const pct = Math.round(((i + 1) / total) * 100);
         showProgress(pct, `Traduciendo ${i + 1} / ${total} líneas...`);
-        if (i < total - 1) await sleep(120);
+        if (i < total - 1) await sleep(100);
     }
 
     state.currentSubs = translated;
@@ -736,7 +731,6 @@ async function translateSubsMyMemory(subs) {
     hideProgress();
     showStatus('subStatus', `✅ ${translated.length} líneas traducidas al español`, 'success');
 
-    // Actualizar selector de subtítulos
     document.getElementById('subSelector').innerHTML = `
         <option value="none">Sin subtítulos</option>
         <option value="original">Inglés (original)</option>
@@ -744,7 +738,6 @@ async function translateSubsMyMemory(subs) {
     `;
     state.subType = 'translated';
 
-    // Si el video está reproduciendo, actualizar subtítulo
     if (!video.paused) updateSubtitle();
 }
 

@@ -6,8 +6,6 @@
     <title>KissKH — Subtítulos en Español</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- hls.js para reproducir .m3u8 -->
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@0.14.17/dist/hls.min.js"></script>
     <style>
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -119,6 +117,11 @@
             border: 1px solid var(--border);
         }
         .btn-secondary:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+        .btn-success {
+            background: var(--success);
+            color: #000;
+        }
+        .btn-success:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
         .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
         .btn-sm {
             padding: 5px 12px;
@@ -161,53 +164,19 @@
             margin-top: 5px;
         }
 
-        /* Reproductor HLS */
-        .player-container {
+        /* Reproductor embed */
+        .player-wrapper {
             position: relative;
             background: #000;
             border-radius: var(--radius);
             overflow: hidden;
             aspect-ratio: 16/9;
         }
-        .player-container video {
+        .player-wrapper iframe {
             width: 100%;
             height: 100%;
+            border: none;
             display: block;
-            background: #000;
-        }
-        .subtitle-overlay {
-            position: absolute;
-            bottom: 60px;
-            left: 0;
-            right: 0;
-            text-align: center;
-            pointer-events: none;
-            padding: 0 20px;
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: white;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.9), 0 0 10px rgba(0,0,0,0.8);
-            font-family: 'Inter', sans-serif;
-            z-index: 10;
-        }
-        .subtitle-overlay span {
-            background: rgba(0,0,0,0.6);
-            padding: 4px 12px;
-            border-radius: 4px;
-            display: inline-block;
-            max-width: 90%;
-        }
-
-        .player-controls {
-            display: flex;
-            gap: 8px;
-            padding: 10px 0;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-        .player-controls .btn {
-            padding: 6px 14px;
-            font-size: 0.78rem;
         }
 
         .episode-info {
@@ -273,25 +242,6 @@
             flex-wrap: wrap;
         }
 
-        .tabs { display: flex; gap: 2px; margin-bottom: 14px; flex-wrap: wrap; }
-        .tab {
-            padding: 7px 16px;
-            border-radius: 7px;
-            font-size: 0.82rem;
-            font-weight: 600;
-            cursor: pointer;
-            color: var(--muted);
-            background: transparent;
-            border: none;
-            font-family: inherit;
-            transition: all 0.2s;
-        }
-        .tab.active { background: var(--surface2); color: var(--text); }
-        .tab:hover:not(.active) { color: var(--text); }
-
-        .tab-panel { display: none; }
-        .tab-panel.active { display: block; }
-
         .divider { height: 1px; background: var(--border); margin: 16px 0; }
 
         .help-block {
@@ -309,6 +259,16 @@
             border-radius: 4px;
             font-size: 0.8rem;
         }
+        .help-block.success {
+            background: rgba(62,207,142,0.08);
+            border-color: rgba(62,207,142,0.25);
+            color: var(--success);
+        }
+        .help-block.warning {
+            background: rgba(245,166,35,0.08);
+            border-color: rgba(245,166,35,0.25);
+            color: var(--warning);
+        }
 
         .drop-zone {
             background: var(--surface2);
@@ -321,29 +281,34 @@
         }
         .drop-zone:hover { border-color: var(--accent); }
 
-        .sub-selector {
-            display: flex;
-            gap: 8px;
-            align-items: center;
+        .steps {
+            margin: 8px 0;
+            padding-left: 20px;
         }
-        .sub-selector select {
-            background: var(--surface2);
+        .steps li {
+            margin-bottom: 4px;
+            font-size: 0.85rem;
+        }
+        .steps li strong {
             color: var(--text);
+        }
+
+        .video-url-box {
+            background: var(--bg);
             border: 1px solid var(--border);
             border-radius: 6px;
-            padding: 6px 12px;
-            font-family: inherit;
+            padding: 10px 14px;
             font-size: 0.82rem;
-            outline: none;
-            cursor: pointer;
+            color: var(--muted);
+            word-break: break-all;
+            margin: 8px 0;
+            font-family: monospace;
         }
-        .sub-selector select:focus { border-color: var(--accent); }
 
         @media (max-width: 600px) {
             .input-row { flex-direction: column; }
             .dl-row { flex-direction: column; }
             header h1 { font-size: 1.4rem; }
-            .subtitle-overlay { font-size: 1.2rem; bottom: 50px; }
         }
     </style>
 </head>
@@ -351,50 +316,36 @@
 <div class="app">
     <header>
         <h1>🎬 KissKH <span>Subtítulos ES</span></h1>
-        <p>Reproduce videos con subtítulos traducidos al español</p>
+        <p>Traduce subtítulos y reprodúcelos con VLC o MPV</p>
     </header>
 
-    <!-- Step 1: URL del video .m3u8 -->
+    <!-- Step 1: URL del episodio -->
     <div class="card">
-        <div class="card-title">1 · URL del video (.m3u8)</div>
+        <div class="card-title">1 · URL del episodio</div>
         <div class="input-row">
             <input type="url" id="urlInput"
-                placeholder="https://ejemplo.com/video.m3u8">
-            <button class="btn btn-primary" id="loadBtn" onclick="loadVideo()">Cargar</button>
+                placeholder="https://kisskh.co/Drama/...?id=XXXX&ep=YYYYY&...">
+            <button class="btn btn-primary" id="loadBtn" onclick="loadEpisode()">Cargar</button>
         </div>
         <div class="help-block" style="margin-top:12px;">
-            <strong>📌 Cómo obtener la URL del .m3u8:</strong>
-            <ol style="margin:6px 0 0 18px;font-size:0.82rem;">
-                <li>Abre el episodio en kisskh.co</li>
-                <li>Presiona <kbd>F12</kbd> → pestaña <strong>Network</strong> (Red)</li>
-                <li>Filtra por <code>.m3u8</code></li>
-                <li>Copia la URL del archivo (ej: <code>https://hls08.cdnvideo11.shop/.../Ep9.v540_index.m3u8</code>)</li>
-            </ol>
+            Pega la URL del episodio con <code>ep=</code>.<br>
+            Ejemplo: <code>https://kisskh.co/Drama/...?id=12702&<strong>ep=214818</strong></code>
         </div>
         <div id="loadStatus" class="status"></div>
         <div id="episodeInfo" class="episode-info" style="margin-top:12px;"></div>
     </div>
 
-    <!-- Reproductor HLS con subtítulos -->
+    <!-- Reproductor embed (opcional) -->
     <div class="card" id="playerCard" style="display:none;">
-        <div class="card-title">▶ Reproductor con subtítulos</div>
-        <div class="player-container" id="playerContainer">
-            <video id="videoPlayer" playsinline></video>
-            <div class="subtitle-overlay" id="subtitleOverlay"><span></span></div>
-        </div>
-        <div class="player-controls" id="playerControls">
-            <button class="btn btn-secondary btn-sm" onclick="togglePlay()">⏯ Play/Pausa</button>
-            <button class="btn btn-secondary btn-sm" onclick="toggleMute()">🔊 Silenciar</button>
-            <div class="sub-selector">
-                <span style="color:var(--muted);font-size:0.78rem;">Subtítulos:</span>
-                <select id="subSelector" onchange="changeSubtitle()">
-                    <option value="none">Sin subtítulos</option>
-                    <option value="original">Inglés (original)</option>
-                    <option value="translated">Español (traducido)</option>
-                </select>
+        <div class="card-title">▶ Reproductor (vista previa)</div>
+        <div class="player-wrapper" id="playerWrapper">
+            <div id="playerContent" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:0.9rem;background:#0d0f14;">
+                Carga un episodio para ver el video
             </div>
-            <span style="color:var(--muted);font-size:0.78rem;margin-left:auto;" id="timeDisplay">0:00</span>
         </div>
+        <p style="color:var(--muted);font-size:0.78rem;margin-top:8px;">
+            ⚠️ Este reproductor es solo para vista previa. Los subtítulos traducidos se usan con VLC o MPV.
+        </p>
     </div>
 
     <!-- Step 2: Subtítulos -->
@@ -403,10 +354,10 @@
 
         <div class="help-block" style="margin-bottom:14px;">
             <strong>📌 Cómo obtener el archivo .SRT de inglés:</strong>
-            <ol style="margin:6px 0 0 18px;font-size:0.82rem;">
+            <ol class="steps">
                 <li>Abre el episodio en kisskh.co</li>
                 <li>Presiona <kbd>F12</kbd> → pestaña <strong>Network</strong> (Red)</li>
-                <li>Filtra por <code>.srt</code></li>
+                <li>Filtra por <code>.srt</code> o <code>.vtt</code></li>
                 <li>Copia la URL del archivo o descárgalo</li>
             </ol>
         </div>
@@ -436,7 +387,7 @@
         <div id="subActions" style="display:none;margin-top:12px;">
             <div id="subLoaded" style="font-size:0.85rem;color:var(--success);margin-bottom:10px;"></div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                <button class="btn btn-primary" onclick="startTranslation()">🌐 Traducir al Español (Google)</button>
+                <button class="btn btn-primary" onclick="startTranslation()">🌐 Traducir al Español</button>
                 <button class="btn btn-secondary" onclick="viewCurrentSubs()">Ver subtítulos</button>
             </div>
         </div>
@@ -460,6 +411,59 @@
             <button class="btn btn-secondary" onclick="downloadSubs('vtt')">⬇ Descargar .VTT</button>
         </div>
     </div>
+
+    <!-- Cómo reproducir con VLC / MPV -->
+    <div class="card" id="howToCard" style="display:none;">
+        <div class="card-title">🎯 3 · Cómo ver el video con tus subtítulos</div>
+        <div class="help-block success">
+            <strong>✅ Tus subtítulos están listos. Aquí tienes 3 formas de usarlos:</strong>
+        </div>
+
+        <div style="margin-top:12px;display:flex;flex-direction:column;gap:12px;">
+            <!-- Opción 1: VLC -->
+            <div style="background:var(--surface2);border-radius:8px;padding:14px;border-left:3px solid var(--success);">
+                <h4 style="font-size:0.9rem;font-weight:600;margin-bottom:6px;">📺 Opción 1: VLC Media Player (Recomendado)</h4>
+                <ol class="steps" style="font-size:0.82rem;color:var(--muted);">
+                    <li>Abre <strong>VLC</strong> (descárgalo gratis en <a href="https://videolan.org" target="_blank" style="color:var(--info);">videolan.org</a>)</li>
+                    <li>Ve a <strong>Medio → Abrir Ubicación de Red</strong></li>
+                    <li>Pega la URL del video (la que obtuviste de kisskh, terminada en <code>.m3u8</code>)</li>
+                    <li>Ve a <strong>Subtítulos → Añadir archivo de subtítulos</strong></li>
+                    <li>Selecciona el archivo <code>.srt</code> que descargaste</li>
+                    <li>🎉 <strong>¡Listo! Sincronización perfecta</strong></li>
+                </ol>
+            </div>
+
+            <!-- Opción 2: MPV -->
+            <div style="background:var(--surface2);border-radius:8px;padding:14px;border-left:3px solid var(--info);">
+                <h4 style="font-size:0.9rem;font-weight:600;margin-bottom:6px;">🎬 Opción 2: MPV Player</h4>
+                <ol class="steps" style="font-size:0.82rem;color:var(--muted);">
+                    <li>Abre la terminal y ejecuta:</li>
+                    <li><code style="background:var(--bg);padding:6px 10px;border-radius:4px;display:block;margin:4px 0;font-size:0.78rem;word-break:break-all;">
+                        mpv --sub-file=subtitulos_es.srt "URL_DEL_VIDEO.m3u8"
+                    </code></li>
+                    <li>🎉 <strong>¡Listo! Sincronización perfecta</strong></li>
+                </ol>
+            </div>
+
+            <!-- Opción 3: Descargar -->
+            <div style="background:var(--surface2);border-radius:8px;padding:14px;border-left:3px solid var(--warning);">
+                <h4 style="font-size:0.9rem;font-weight:600;margin-bottom:6px;">💾 Opción 3: Descargar el video</h4>
+                <ol class="steps" style="font-size:0.82rem;color:var(--muted);">
+                    <li>Usa <strong>yt-dlp</strong> para descargar:</li>
+                    <li><code style="background:var(--bg);padding:6px 10px;border-radius:4px;display:block;margin:4px 0;font-size:0.78rem;word-break:break-all;">
+                        yt-dlp "URL_DEL_EPISODIO_DE_KISSKH"
+                    </code></li>
+                    <li>Reproduce el video descargado con tus subtítulos</li>
+                </ol>
+            </div>
+        </div>
+
+        <div style="margin-top:12px;padding:12px;background:rgba(74,158,255,0.08);border-radius:8px;border:1px solid rgba(74,158,255,0.15);">
+            <p style="font-size:0.82rem;color:var(--info);">
+                💡 <strong>¿Por qué VLC/MPV?</strong> Estos reproductores pueden manejar los streams .m3u8 con los tokens de autenticación de kisskh, y cargar tus subtítulos traducidos con sincronización perfecta.
+            </p>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -471,14 +475,7 @@ let state = {
     currentSubs: [],
     filteredSubs: [],
     isTranslated: false,
-    subType: 'none',
-    hls: null,
 };
-
-// ─── Elementos DOM ──────────────────────────────────────────────
-const video = document.getElementById('videoPlayer');
-const overlay = document.getElementById('subtitleOverlay');
-const timeDisplay = document.getElementById('timeDisplay');
 
 // ─── UI helpers ──────────────────────────────────────────────────
 function showStatus(id, msg, type) {
@@ -504,133 +501,62 @@ function hideProgress() {
     if (wrap) wrap.classList.remove('show');
 }
 
-// ─── Cargar video HLS ────────────────────────────────────────────
-async function loadVideo() {
+// ─── Cargar episodio ─────────────────────────────────────────────
+async function loadEpisode() {
     const url = document.getElementById('urlInput').value.trim();
     if (!url) {
-        showStatus('loadStatus', '⚠️ Pega una URL de video .m3u8', 'warning');
+        showStatus('loadStatus', '⚠️ Pega una URL de episodio de KissKH', 'warning');
         return;
     }
 
-    state.videoUrl = url;
+    const epId = extractEpisodeId(url);
+    if (!epId) {
+        showStatus('loadStatus', '❌ No se encontró el parámetro ep= en la URL', 'error');
+        return;
+    }
+
+    state.episodeId = epId;
     document.getElementById('loadBtn').disabled = true;
-    showStatus('loadStatus', '📹 Cargando video HLS...', 'info');
+    showStatus('loadStatus', `🔍 Cargando episodio ID ${epId}...`, 'info');
 
+    // Mostrar el reproductor embed (vista previa)
+    const playerContent = document.getElementById('playerContent');
+    playerContent.innerHTML = `<iframe src="https://kisskh.megaplay.su/kisskh/${epId}?color=%23e84b6b" allowfullscreen></iframe>`;
+    document.getElementById('playerContent').style.width = '100%';
+    document.getElementById('playerContent').style.height = '100%';
+    document.getElementById('playerContent').style.display = 'block';
+
+    document.getElementById('playerCard').style.display = 'block';
+    document.getElementById('subsCard').style.display = 'block';
+    document.getElementById('howToCard').style.display = 'none';
+
+    showEpisodeInfo(epId);
+    showStatus('loadStatus', `✅ Episodio ${epId} cargado. Ahora carga los subtítulos en inglés.`, 'success');
+    document.getElementById('loadBtn').disabled = false;
+}
+
+function showEpisodeInfo(epId) {
+    const info = document.getElementById('episodeInfo');
+    info.classList.add('show');
+    info.innerHTML = `
+        <div class="meta">
+            <h3>✅ Episodio cargado</h3>
+            <p>ID: <span class="ep-id-badge">${epId}</span></p>
+            <p style="font-size:0.8rem;color:var(--muted);margin-top:4px;">
+                Ahora carga el archivo de subtítulos en inglés para traducir al español
+            </p>
+        </div>
+    `;
+}
+
+function extractEpisodeId(url) {
     try {
-        // Destruir HLS anterior si existe
-        if (state.hls) {
-            state.hls.destroy();
-            state.hls = null;
-        }
-
-        // Verificar si el navegador soporta HLS nativo
-        if (video.canPlayType('application/vnd.apple.mpegurl')) {
-            // Safari / iOS
-            video.src = url;
-            video.load();
-            video.play().catch(() => {});
-            setupVideoEvents();
-            showStatus('loadStatus', '✅ Video cargado (HLS nativo)', 'success');
-            document.getElementById('loadBtn').disabled = false;
-            document.getElementById('playerCard').style.display = 'block';
-            document.getElementById('subsCard').style.display = 'block';
-            return;
-        }
-
-        // Usar hls.js para otros navegadores
-        if (Hls.isSupported()) {
-            const hls = new Hls({
-                xhrSetup: function(xhr, url) {
-                    // Añadir headers para imitar una petición desde kisskh
-                    xhr.setRequestHeader('Referer', 'https://kisskh.co/');
-                    xhr.setRequestHeader('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
-                }
-            });
-
-            hls.loadSource(url);
-            hls.attachMedia(video);
-            state.hls = hls;
-
-            hls.on(Hls.Events.MANIFEST_PARSED, function() {
-                video.play().catch(() => {});
-                showStatus('loadStatus', '✅ Video HLS cargado correctamente', 'success');
-                document.getElementById('loadBtn').disabled = false;
-                document.getElementById('playerCard').style.display = 'block';
-                document.getElementById('subsCard').style.display = 'block';
-            });
-
-            hls.on(Hls.Events.ERROR, function(event, data) {
-                if (data.fatal) {
-                    showStatus('loadStatus', '❌ Error al cargar el video HLS. El enlace puede haber expirado.', 'error');
-                    document.getElementById('loadBtn').disabled = false;
-                }
-            });
-
-            setupVideoEvents();
-        } else {
-            showStatus('loadStatus', '❌ Tu navegador no soporta HLS. Usa Chrome, Firefox o Edge.', 'error');
-            document.getElementById('loadBtn').disabled = false;
-        }
-    } catch (e) {
-        showStatus('loadStatus', '❌ Error al cargar el video: ' + e.message, 'error');
-        document.getElementById('loadBtn').disabled = false;
-    }
-}
-
-function setupVideoEvents() {
-    video.ontimeupdate = updateSubtitle;
-    setInterval(updateTimeDisplay, 1000);
-
-    // Mostrar controles cuando el video está listo
-    video.onloadeddata = () => {
-        document.getElementById('playerControls').style.display = 'flex';
-    };
-}
-
-// ─── Control del reproductor ────────────────────────────────────
-function togglePlay() {
-    if (video.paused) video.play();
-    else video.pause();
-}
-
-function toggleMute() {
-    video.muted = !video.muted;
-}
-
-function updateTimeDisplay() {
-    const min = Math.floor(video.currentTime / 60);
-    const sec = Math.floor(video.currentTime % 60);
-    timeDisplay.textContent = `${min}:${String(sec).padStart(2,'0')}`;
-}
-
-// ─── Subtítulos en tiempo real ──────────────────────────────────
-function updateSubtitle() {
-    const currentTime = video.currentTime;
-    let subs = [];
-
-    if (state.subType === 'original' && state.rawSubs.length) {
-        subs = state.rawSubs;
-    } else if (state.subType === 'translated' && state.currentSubs.length && state.isTranslated) {
-        subs = state.currentSubs;
-    }
-
-    if (!subs.length) {
-        overlay.querySelector('span').textContent = '';
-        return;
-    }
-
-    const active = subs.find(s => currentTime >= s.start - 0.3 && currentTime <= s.end + 0.3);
-    if (active) {
-        overlay.querySelector('span').textContent = active.text;
-        overlay.style.display = 'block';
-    } else {
-        overlay.querySelector('span').textContent = '';
-    }
-}
-
-function changeSubtitle() {
-    state.subType = document.getElementById('subSelector').value;
-    updateSubtitle();
+        const u = new URL(url);
+        const ep = u.searchParams.get('ep');
+        if (ep && /^\d+$/.test(ep)) return ep;
+    } catch {}
+    const m = url.match(/[?&]ep=(\d+)/);
+    return m ? m[1] : null;
 }
 
 // ─── Cargar subtítulos desde archivo ─────────────────────────────
@@ -650,13 +576,6 @@ function onFileSelected(event) {
             document.getElementById('subActions').style.display = 'block';
             hideStatus('subStatus');
             showStatus('subStatus', `✅ ${subs.length} líneas cargadas correctamente`, 'success');
-
-            document.getElementById('subSelector').innerHTML = `
-                <option value="none">Sin subtítulos</option>
-                <option value="original" selected>Inglés (original)</option>
-                <option value="translated">Español (traducido)</option>
-            `;
-            state.subType = 'original';
         } catch(err) {
             showStatus('subStatus', '❌ Error leyendo archivo: ' + err.message, 'error');
         }
@@ -678,13 +597,6 @@ async function loadManualSubsFromUrl() {
         document.getElementById('subLoaded').textContent = `${subs.length} líneas cargadas desde URL`;
         document.getElementById('subActions').style.display = 'block';
         showStatus('subStatus', `✅ ${subs.length} líneas cargadas`, 'success');
-
-        document.getElementById('subSelector').innerHTML = `
-            <option value="none">Sin subtítulos</option>
-            <option value="original" selected>Inglés (original)</option>
-            <option value="translated">Español (traducido)</option>
-        `;
-        state.subType = 'original';
     } catch(e) {
         showStatus('subStatus', '❌ No se pudo descargar: ' + e.message, 'error');
     }
@@ -713,7 +625,7 @@ async function translateSubsGoogle(subs) {
     const translated = [];
 
     showProgress(0, `Traduciendo 0 / ${total} líneas...`);
-    showStatus('subStatus', '🌐 Traduciendo con Google Translate (gratis)...', 'info');
+    showStatus('subStatus', '🌐 Traduciendo con Google Translate...', 'info');
 
     for (let i = 0; i < total; i++) {
         const sub = subs[i];
@@ -747,13 +659,9 @@ async function translateSubsGoogle(subs) {
     hideProgress();
     showStatus('subStatus', `✅ ${translated.length} líneas traducidas al español`, 'success');
 
-    document.getElementById('subSelector').innerHTML = `
-        <option value="none">Sin subtítulos</option>
-        <option value="original">Inglés (original)</option>
-        <option value="translated" selected>Español (traducido)</option>
-    `;
-    state.subType = 'translated';
-    if (!video.paused) updateSubtitle();
+    // Mostrar cómo usar los subtítulos
+    document.getElementById('howToCard').style.display = 'block';
+    showStatus('loadStatus', '💡 Subtítulos listos. Mira la sección "Cómo ver el video con tus subtítulos" abajo.', 'success');
 }
 
 // ─── Descargar subtítulos ─────────────────────────────────────────
@@ -776,7 +684,7 @@ function downloadSubs(format) {
     const blob = new Blob([content], { type: mime + ';charset=utf-8' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `subtitulos_${state.isTranslated ? 'es' : 'en'}_${state.episodeId || 'video'}.${ext}`;
+    a.download = `subtitulos_${state.isTranslated ? 'es' : 'en'}_ep${state.episodeId || 'x'}.${ext}`;
     a.click();
 }
 
@@ -905,7 +813,7 @@ function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 // Enter en el input
 document.getElementById('urlInput').addEventListener('keypress', e => {
-    if (e.key === 'Enter') loadVideo();
+    if (e.key === 'Enter') loadEpisode();
 });
 </script>
 </body>

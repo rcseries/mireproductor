@@ -117,11 +117,6 @@
             border: 1px solid var(--border);
         }
         .btn-secondary:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
-        .btn-success {
-            background: var(--success);
-            color: #000;
-        }
-        .btn-success:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
         .btn-sm {
             padding: 5px 12px;
             font-size: 0.78rem;
@@ -261,36 +256,10 @@
             font-size: 0.85rem;
         }
 
-        /* URL generada */
-        .url-box {
-            background: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 12px 16px;
-            margin: 10px 0;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        .url-box .url-text {
-            flex: 1;
-            font-size: 0.78rem;
-            color: var(--info);
-            word-break: break-all;
-            font-family: monospace;
-            min-width: 150px;
-        }
-        .url-box .btn {
-            padding: 5px 12px;
-            font-size: 0.78rem;
-        }
-
         @media (max-width: 600px) {
             .input-row { flex-direction: column; }
             .dl-row { flex-direction: column; }
             header h1 { font-size: 1.4rem; }
-            .url-box { flex-direction: column; align-items: stretch; }
         }
     </style>
 </head>
@@ -365,55 +334,32 @@
         </div>
     </div>
 
-    <!-- URL generada para VLC -->
-    <div class="card" id="urlCard" style="display:none;">
-        <div class="card-title">🔗 URL de tus subtítulos (para VLC/MPV)</div>
-        <div class="help-block success" style="margin-bottom:10px;">
-            <strong>✅ Copia esta URL y pégala en VLC/MPV para cargar los subtítulos sin descargar.</strong>
-        </div>
-
-        <div class="url-box">
-            <span class="url-text" id="generatedUrl">Cargando...</span>
-            <button class="btn btn-secondary btn-sm" onclick="copyUrl()">📋 Copiar</button>
-            <button class="btn btn-secondary btn-sm" onclick="openInVlc()">🎬 Abrir en VLC</button>
-        </div>
-
-        <div style="margin-top:8px;padding:10px;background:var(--surface2);border-radius:6px;border:1px solid var(--border);">
-            <p style="font-size:0.78rem;color:var(--muted);">
-                <strong>📺 Cómo usar esta URL en VLC:</strong><br>
-                1. Abre VLC → <strong>Subtítulos</strong> → <strong>Añadir archivo de subtítulos...</strong><br>
-                2. En lugar de seleccionar un archivo, pega esta URL en el campo "Nombre de archivo"<br>
-                3. Presiona <strong>Enter</strong> y los subtítulos se cargarán automáticamente
-            </p>
-            <p style="font-size:0.78rem;color:var(--muted);margin-top:6px;">
-                🎬 <strong>En MPV:</strong> <code>mpv --sub-file="URL_DE_TUS_SUBTITULOS" "URL_DEL_VIDEO"</code>
-            </p>
-        </div>
-    </div>
-
     <!-- Cómo usar los subtítulos -->
     <div class="card" id="howToCard" style="display:none;">
         <div class="card-title">🎯 Cómo ver el video con tus subtítulos</div>
+        <div class="help-block success" style="margin-bottom:12px;">
+            <strong>✅ Tus subtítulos están listos. Sigue estos pasos:</strong>
+        </div>
 
         <div style="margin-top:12px;display:flex;flex-direction:column;gap:12px;">
             <div style="background:var(--surface2);border-radius:8px;padding:14px;border-left:3px solid var(--success);">
-                <h4 style="font-size:0.9rem;font-weight:600;margin-bottom:6px;">📺 Opción 1: VLC Media Player (Recomendado)</h4>
+                <h4 style="font-size:0.9rem;font-weight:600;margin-bottom:6px;">📺 VLC Media Player (Recomendado)</h4>
                 <ol class="steps" style="font-size:0.82rem;color:var(--muted);">
                     <li>Abre <strong>VLC</strong> (descárgalo gratis en <a href="https://videolan.org" target="_blank" style="color:var(--info);">videolan.org</a>)</li>
                     <li>Ve a <strong>Medio → Abrir Ubicación de Red</strong></li>
-                    <li>Pega la URL del video (terminada en <code>.m3u8</code> o <code>.mp4</code>)</li>
+                    <li>Pega la URL del video (terminada en <code>.m3u8</code>)</li>
                     <li>Ve a <strong>Subtítulos → Añadir archivo de subtítulos</strong></li>
-                    <li>Pega la URL generada por la app (arriba)</li>
+                    <li>Selecciona el archivo <code>.srt</code> que descargaste</li>
                     <li>🎉 <strong>¡Listo! Sincronización perfecta</strong></li>
                 </ol>
             </div>
 
             <div style="background:var(--surface2);border-radius:8px;padding:14px;border-left:3px solid var(--info);">
-                <h4 style="font-size:0.9rem;font-weight:600;margin-bottom:6px;">🎬 Opción 2: MPV Player</h4>
+                <h4 style="font-size:0.9rem;font-weight:600;margin-bottom:6px;">🎬 MPV Player</h4>
                 <ol class="steps" style="font-size:0.82rem;color:var(--muted);">
                     <li>Abre la terminal y ejecuta:</li>
                     <li><code style="background:var(--bg);padding:6px 10px;border-radius:4px;display:block;margin:4px 0;font-size:0.78rem;word-break:break-all;">
-                        mpv --sub-file="URL_DE_TUS_SUBTITULOS" "URL_DEL_VIDEO"
+                        mpv --sub-file=subtitulos_es.srt "URL_DEL_VIDEO"
                     </code></li>
                     <li>🎉 <strong>¡Listo! Sincronización perfecta</strong></li>
                 </ol>
@@ -435,7 +381,6 @@ let state = {
     currentSubs: [],
     filteredSubs: [],
     isTranslated: false,
-    generatedUrl: '',
 };
 
 // ─── UI helpers ──────────────────────────────────────────────────
@@ -462,21 +407,6 @@ function hideProgress() {
     if (wrap) wrap.classList.remove('show');
 }
 
-// ─── Generar URL con los subtítulos (data URI) ──────────────────
-function generateSubtitleUrl() {
-    if (!state.currentSubs.length) return null;
-
-    // Generar el contenido SRT
-    let srtContent = toSRT(state.currentSubs);
-
-    // Crear una URL con el contenido codificado
-    // Usamos 'data:text/plain;charset=utf-8,' para que sea compatible con VLC
-    const encoded = encodeURIComponent(srtContent);
-    const url = `data:text/plain;charset=utf-8,${encoded}`;
-
-    return url;
-}
-
 // ─── Cargar subtítulos desde archivo ─────────────────────────────
 function onFileSelected(event) {
     const file = event.target.files[0];
@@ -492,7 +422,6 @@ function onFileSelected(event) {
             document.getElementById('dropLabel').textContent = `✅ ${file.name} (${subs.length} líneas)`;
             document.getElementById('subLoaded').textContent = `${subs.length} líneas cargadas desde "${file.name}"`;
             document.getElementById('subActions').style.display = 'block';
-            document.getElementById('urlCard').style.display = 'none';
             document.getElementById('howToCard').style.display = 'none';
             hideStatus('subStatus');
             showStatus('subStatus', `✅ ${subs.length} líneas cargadas correctamente`, 'success');
@@ -519,7 +448,6 @@ async function loadManualSubsFromUrl() {
         state.isTranslated = false;
         document.getElementById('subLoaded').textContent = `${subs.length} líneas cargadas desde URL`;
         document.getElementById('subActions').style.display = 'block';
-        document.getElementById('urlCard').style.display = 'none';
         document.getElementById('howToCard').style.display = 'none';
         showStatus('subStatus', `✅ ${subs.length} líneas cargadas`, 'success');
     } catch(e) {
@@ -584,44 +512,8 @@ async function translateSubsGoogle(subs) {
     hideProgress();
     showStatus('subStatus', `✅ ${translated.length} líneas traducidas al español`, 'success');
 
-    // Generar la URL
-    const url = generateSubtitleUrl();
-    if (url) {
-        state.generatedUrl = url;
-        document.getElementById('generatedUrl').textContent = url;
-        document.getElementById('urlCard').style.display = 'block';
-    }
-
+    // Mostrar cómo usar los subtítulos
     document.getElementById('howToCard').style.display = 'block';
-}
-
-// ─── Copiar URL ──────────────────────────────────────────────────
-function copyUrl() {
-    const urlText = document.getElementById('generatedUrl').textContent;
-    if (urlText && urlText !== 'Cargando...') {
-        navigator.clipboard.writeText(urlText).then(() => {
-            showStatus('subStatus', '✅ URL copiada al portapapeles', 'success');
-        }).catch(() => {
-            // Fallback: seleccionar el texto
-            const range = document.createRange();
-            range.selectNode(document.getElementById('generatedUrl'));
-            window.getSelection().removeAllRanges();
-            window.getSelection().addRange(range);
-            document.execCommand('copy');
-            showStatus('subStatus', '✅ URL copiada al portapapeles', 'success');
-        });
-    }
-}
-
-// ─── Abrir en VLC (intenta lanzar VLC con la URL) ──────────────
-function openInVlc() {
-    const url = document.getElementById('generatedUrl').textContent;
-    if (url && url !== 'Cargando...') {
-        // Crear un archivo .vlc temporal con la URL de subtítulos
-        // VLC no soporta data URIs directamente, así que mostramos instrucciones
-        showStatus('subStatus', '📺 Copia la URL y pégala en VLC → Subtítulos → Añadir archivo de subtítulos', 'info');
-        copyUrl();
-    }
 }
 
 // ─── Descargar subtítulos ─────────────────────────────────────────

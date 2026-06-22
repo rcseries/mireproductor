@@ -1,6 +1,6 @@
 /**
  * Módulo para controlar el reproductor de video (Plyr)
- * Versión corregida con mejor manejo de autoplay y CORS
+ * Versión corregida - Eliminado uso de trigger()
  */
 class VideoPlayer {
     constructor() {
@@ -10,6 +10,7 @@ class VideoPlayer {
         this.subtitleTracks = [];
         this.isPlaying = false;
         this.hasUserInteracted = false;
+        this.loadTimeout = null;
     }
     
     /**
@@ -22,7 +23,7 @@ class VideoPlayer {
             throw new Error('Elemento de video no encontrado');
         }
         
-        // ✅ Configurar atributos para mejor compatibilidad
+        // Configurar atributos para mejor compatibilidad
         this.videoElement.setAttribute('playsinline', '');
         this.videoElement.setAttribute('crossorigin', 'anonymous');
         
@@ -44,7 +45,6 @@ class VideoPlayer {
             settings: ['captions', 'quality', 'speed'],
             captions: { active: true, update: true, language: 'es' },
             keyboard: { focused: true, global: true },
-            // ✅ Desactivar autoplay por defecto para evitar errores
             autoplay: false
         });
         
@@ -72,7 +72,6 @@ class VideoPlayer {
             this.showStatus('Error al cargar el video', 'error');
         });
         
-        // ✅ Detectar interacción del usuario con el reproductor
         this.player.on('play', () => {
             this.isPlaying = true;
             this.hasUserInteracted = true;
@@ -84,13 +83,18 @@ class VideoPlayer {
             console.log('⏸️ Reproducción pausada');
         });
         
-        // ✅ Detectar cuando el video está listo para reproducir
+        // Eventos nativos del video
         this.videoElement.addEventListener('loadedmetadata', () => {
             console.log('📹 Metadatos del video cargados');
         });
         
         this.videoElement.addEventListener('canplay', () => {
             console.log('✅ Video listo para reproducir');
+        });
+        
+        this.videoElement.addEventListener('error', (e) => {
+            console.error('❌ Error en video:', e);
+            this.showStatus('Error al cargar el video. Verifica la URL o usa un proxy.', 'error');
         });
     }
     
@@ -108,19 +112,25 @@ class VideoPlayer {
         
         console.log('📹 Cargando video:', url);
         
-        // ✅ Actualizar fuente del video
+        // Limpiar timeout anterior
+        if (this.loadTimeout) {
+            clearTimeout(this.loadTimeout);
+            this.loadTimeout = null;
+        }
+        
+        // Actualizar fuente del video
         const source = this.videoElement.querySelector('source');
         if (source) {
             source.src = url;
         }
         
-        // ✅ Configurar CORS
+        // Configurar CORS
         this.videoElement.crossOrigin = 'anonymous';
         
-        // ✅ Recargar el video
+        // Recargar el video
         this.videoElement.load();
         
-        // ✅ Intentar reproducir automáticamente con manejo de errores mejorado
+        // Intentar reproducir automáticamente con manejo de errores mejorado
         this.attemptAutoplay();
         
         this.showStatus('Video cargado correctamente', 'success');
@@ -133,7 +143,7 @@ class VideoPlayer {
     attemptAutoplay() {
         if (!this.videoElement) return;
         
-        // ✅ Si el usuario ya interactuó, podemos reproducir sin problemas
+        // Si el usuario ya interactuó, podemos reproducir sin problemas
         if (this.hasUserInteracted) {
             const playPromise = this.videoElement.play();
             if (playPromise !== undefined) {
@@ -148,7 +158,7 @@ class VideoPlayer {
             return;
         }
         
-        // ✅ Si no ha interactuado, intentar con muted (permite autoplay en Chrome)
+        // Si no ha interactuado, intentar con muted (permite autoplay en Chrome)
         const wasMuted = this.videoElement.muted;
         this.videoElement.muted = true;
         
@@ -159,21 +169,16 @@ class VideoPlayer {
                     console.log('✅ Reproducción automática iniciada (con muted)');
                     this.showStatus('▶️ Reproduciendo (sin audio). Haz clic en el altavoz para activar el sonido.', 'info');
                     
-                    // ✅ Después de un momento, ofrecer activar el sonido
                     setTimeout(() => {
                         if (this.videoElement && !this.videoElement.muted) {
-                            // Si el usuario ya activó el sonido, no hacer nada
                             return;
                         }
-                        // Mostrar mensaje para activar sonido
                         this.showStatus('🔊 Haz clic en el botón de volumen para activar el sonido', 'info');
                     }, 1000);
                 })
                 .catch(error => {
                     console.warn('⏸️ Autoplay bloqueado. Esperando interacción del usuario.', error);
                     this.showStatus('⏸️ Haz clic en el botón de "Play" para reproducir el video', 'info');
-                    
-                    // ✅ Restaurar estado de muted si falló
                     this.videoElement.muted = wasMuted;
                 });
         }
@@ -223,18 +228,23 @@ class VideoPlayer {
         this.videoElement.appendChild(track);
         this.subtitleTracks.push(track);
         
-        // ✅ Forzar a Plyr a reconocer los nuevos subtítulos
+        // ✅ Forzar actualización de subtítulos sin usar trigger()
         setTimeout(() => {
             if (this.player) {
-                this.player.trigger('captionsenabled');
-                this.player.trigger('languagechange');
+                // Forzar recarga de subtítulos
+                const tracks = this.videoElement.textTracks;
+                for (let i = 0; i < tracks.length; i++) {
+                    if (tracks[i].language === language) {
+                        tracks[i].mode = 'showing';
+                    }
+                }
                 
-                // ✅ Actualizar el selector de idiomas de Plyr
+                // Actualizar la interfaz de Plyr manualmente
                 if (this.player.elements && this.player.elements.captions) {
                     this.player.elements.captions.innerHTML = `<option value="${language}" selected>${label}</option>`;
                 }
             }
-        }, 200);
+        }, 300);
         
         this.showStatus(`✅ Subtítulos cargados: ${subtitles.length} bloques`, 'success');
         return true;

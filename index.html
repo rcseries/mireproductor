@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KissKH — Traductor de Subtítulos</title>
+    <title>Traductor de Subtítulos</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -117,6 +117,11 @@
             border: 1px solid var(--border);
         }
         .btn-secondary:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+        .btn-success {
+            background: var(--success);
+            color: #000;
+        }
+        .btn-success:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
         .btn-sm {
             padding: 5px 12px;
             font-size: 0.78rem;
@@ -256,6 +261,29 @@
             font-size: 0.85rem;
         }
 
+        .download-section {
+            background: var(--surface2);
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 12px;
+            border: 1px solid var(--border);
+            display: none;
+        }
+        .download-section.show {
+            display: block;
+        }
+        .download-section .title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--success);
+            margin-bottom: 8px;
+        }
+        .download-section .subtitle {
+            font-size: 0.78rem;
+            color: var(--muted);
+            margin-bottom: 10px;
+        }
+
         @media (max-width: 600px) {
             .input-row { flex-direction: column; }
             .dl-row { flex-direction: column; }
@@ -266,8 +294,8 @@
 <body>
 <div class="app">
     <header>
-        <h1>🎬 KissKH <span>Subtítulos ES</span></h1>
-        <p>Traduce subtítulos de KissKH al español</p>
+        <h1>🎬 <span>Subtítulos ES</span></h1>
+        <p>Traduce subtítulos al español</p>
     </header>
 
     <!-- Subtítulos -->
@@ -314,6 +342,16 @@
             </div>
         </div>
 
+        <!-- Sección de descarga (SIEMPRE visible después de traducir) -->
+        <div class="download-section" id="downloadSection">
+            <div class="title">✅ Subtítulos traducidos listos</div>
+            <div class="subtitle">Descarga el archivo y cárgalo en VLC o MPV</div>
+            <div class="dl-row" style="margin-top:0;">
+                <button class="btn btn-success" onclick="downloadSubs('srt')">⬇ Descargar .SRT</button>
+                <button class="btn btn-secondary" onclick="downloadSubs('vtt')">⬇ Descargar .VTT</button>
+            </div>
+        </div>
+
         <div id="subStatus" class="status"></div>
         <div id="subProgress" class="progress-wrap">
             <div class="progress-bar"><div class="progress-fill" id="subProgressFill"></div></div>
@@ -327,11 +365,6 @@
         <input type="text" class="sub-search" id="subSearch"
             placeholder="Buscar en subtítulos..." oninput="filterSubs()">
         <div id="subEntries" class="sub-entries"></div>
-        <div class="divider"></div>
-        <div class="dl-row">
-            <button class="btn btn-secondary" onclick="downloadSubs('srt')">⬇ Descargar .SRT</button>
-            <button class="btn btn-secondary" onclick="downloadSubs('vtt')">⬇ Descargar .VTT</button>
-        </div>
     </div>
 
     <!-- Cómo usar los subtítulos -->
@@ -422,6 +455,7 @@ function onFileSelected(event) {
             document.getElementById('dropLabel').textContent = `✅ ${file.name} (${subs.length} líneas)`;
             document.getElementById('subLoaded').textContent = `${subs.length} líneas cargadas desde "${file.name}"`;
             document.getElementById('subActions').style.display = 'block';
+            document.getElementById('downloadSection').classList.remove('show');
             document.getElementById('howToCard').style.display = 'none';
             hideStatus('subStatus');
             showStatus('subStatus', `✅ ${subs.length} líneas cargadas correctamente`, 'success');
@@ -448,6 +482,7 @@ async function loadManualSubsFromUrl() {
         state.isTranslated = false;
         document.getElementById('subLoaded').textContent = `${subs.length} líneas cargadas desde URL`;
         document.getElementById('subActions').style.display = 'block';
+        document.getElementById('downloadSection').classList.remove('show');
         document.getElementById('howToCard').style.display = 'none';
         showStatus('subStatus', `✅ ${subs.length} líneas cargadas`, 'success');
     } catch(e) {
@@ -512,6 +547,9 @@ async function translateSubsGoogle(subs) {
     hideProgress();
     showStatus('subStatus', `✅ ${translated.length} líneas traducidas al español`, 'success');
 
+    // Mostrar la sección de descarga
+    document.getElementById('downloadSection').classList.add('show');
+
     // Mostrar cómo usar los subtítulos
     document.getElementById('howToCard').style.display = 'block';
 }
@@ -538,6 +576,7 @@ function downloadSubs(format) {
     a.href = URL.createObjectURL(blob);
     a.download = `subtitulos_${state.isTranslated ? 'es' : 'en'}.${ext}`;
     a.click();
+    showStatus('subStatus', `✅ Archivo ${ext.toUpperCase()} descargado correctamente`, 'success');
 }
 
 // ─── Renderizar entradas de subtítulos ───────────────────────────
